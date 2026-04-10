@@ -39,7 +39,7 @@ export default function HomePage() {
         {/* RIGHT */}
         <div className="flex justify-center">
           <div className="relative">
-            <div className="absolute -inset-3 rounded-3xl bg-gradient-to-br from-[#7CB98B]/20 to-[#DDE8E1]/60 blur-xl" />
+            <div className="absolute -inset-3 rounded-3xl bg-gradient-to-br from-[#9BA89E]/20 to-[#DDE8E1]/60 blur-xl" />
             <div className="relative bg-[#FEFAF1] p-4 rounded-3xl shadow-[0_24px_64px_rgba(0,0,0,0.12)]">
               <Image
                 src="/hero-new.png"

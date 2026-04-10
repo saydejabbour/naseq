@@ -6,7 +6,7 @@ dotenv.config();
 const db = mysql.createConnection({
   host: "127.0.0.1",
   user: "root",
-  password: "",
+  password: "root",
   database: "naseq",
   port: 3307,
 });
