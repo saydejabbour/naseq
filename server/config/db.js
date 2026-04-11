@@ -1,15 +1,17 @@
+
 import mysql from "mysql2";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const db = mysql.createConnection({
-  host: "127.0.0.1",
-  user: "root",
-  password: "",
-  database: "naseq",
-  port: 3307,
+  host: process.env.DB_HOST || "127.0.0.1",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "naseq",
+  port: process.env.DB_PORT || 3306,
 });
+
 
 db.connect((err) => {
   if (err) {
