@@ -28,3 +28,36 @@ body {
 .font-playfair {
   font-family: var(--font-playfair);
 }
+
+/* 🔥 FADE UP (same as before) */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 🔥 PULSE (loading dot) */
+@keyframes pulseCustom {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+}
+
+/* ✅ Utility classes */
+.animate-fadeUp {
+  animation: fadeUp 0.6s ease both;
+}
+
+.animate-pulseCustom {
+  animation: pulseCustom 1.4s ease-in-out infinite;
+}

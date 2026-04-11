@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/authRoutes.js";
 import clothingRoutes from "./routes/clothingRoutes.js";
-import outfitRoutes from "./routes/outfits.js";
+import outfitRoutes from "./routes/outfitsRoutes.js";
 
 dotenv.config();
 

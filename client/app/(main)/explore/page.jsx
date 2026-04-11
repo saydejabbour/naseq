@@ -16,8 +16,11 @@ export default function ExplorePage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await getOutfits();
-      setOutfits(data || []);
+      const res = await getOutfits();
+
+if (res.success) {
+  setOutfits(res.data); 
+}
     };
     fetchData();
   }, []);
