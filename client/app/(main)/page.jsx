@@ -216,12 +216,19 @@ export default function HomePage() {
                   <span className="text-xs text-[#9BA89E] tracking-wide uppercase">
                     Styled Look
                   </span>
-                  <button className="text-xs font-semibold text-[#2F3E34] flex items-center gap-1.5 hover:gap-2.5 transition-all duration-200 group/btn">
-                    Explore
-                    <span className="w-5 h-5 rounded-full bg-[#2F3E34] text-white flex items-center justify-center text-[10px] group-hover/btn:bg-[#7CB98B] transition-colors duration-200">
-                      →
-                    </span>
-                  </button>
+
+
+                <Link
+    href={`/explore/${outfit.id}`}
+    className="text-xs font-semibold text-[#2F3E34] flex items-center gap-1.5 hover:gap-2.5 transition-all duration-200 group/btn"
+  >
+    Explore
+    <span className="w-5 h-5 rounded-full bg-[#2F3E34] text-white flex items-center justify-center text-[10px] group-hover/btn:bg-[#7CB98B] transition-colors duration-200">
+      →
+    </span>
+
+  </Link>
+              
                 </div>
               </div>
             </div>
