@@ -30,3 +30,7 @@ export const saveTemplate = async (user_id, template_id) => {
     template_id,
   });
 };
+
+export const sendContactMessage = async (formData) => {
+  return await apiRequest("/contact", "POST", formData);
+};
