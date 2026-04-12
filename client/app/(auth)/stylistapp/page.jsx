@@ -8,70 +8,80 @@ export default function StylistApplication() {
   const [portfolioFiles, setPortfolioFiles] = useState([]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F3EDE7] px-4">
+    <div className="h-screen flex items-center justify-center bg-[#F3EDE7]">
 
       {/* CARD */}
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg px-6 py-5 flex flex-col items-center">
 
         {/* LOGO */}
         <Image
           src="/logo.png"
           alt="Naseq Logo"
-          width={70}
-          height={70}
-          className="mb-2 object-contain"
+          width={60}
+          height={60}
+          className="mb-2"
         />
 
         {/* TITLE */}
-        <h2 className="text-lg font-semibold text-gray-800">
+        <h2 className="text-base font-semibold text-gray-800">
           Apply as a Stylist
         </h2>
 
-        <p className="text-xs text-gray-500 mb-4 text-center">
+        <p className="text-[11px] text-gray-500 mb-3 text-center">
           Submit your application to join our stylist community
         </p>
 
         {/* FORM */}
-        <form className="w-full flex flex-col gap-3">
+        <form className="w-full flex flex-col gap-2">
 
           {/* NAME */}
           <div>
-            <label className="text-xs text-gray-700">Full Name</label>
+            <label className="text-[11px] text-gray-700">Full Name</label>
             <input
               type="text"
               placeholder="Your full name"
-              className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none"
+              className="w-full mt-1 px-3 py-2 text-xs rounded-md bg-gray-100 outline-none"
             />
           </div>
 
           {/* EMAIL */}
           <div>
-            <label className="text-xs text-gray-700">Email</label>
+            <label className="text-[11px] text-gray-700">Email</label>
             <input
               type="email"
               placeholder="you@example.com"
-              className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none"
+              className="w-full mt-1 px-3 py-2 text-xs rounded-md bg-gray-100 outline-none"
             />
           </div>
 
           {/* BIO */}
           <div>
-            <label className="text-xs text-gray-700">Short Bio</label>
+            <label className="text-[11px] text-gray-700">Short Bio</label>
             <textarea
               placeholder="Tell us about your styling experience..."
-              className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none h-16 resize-none"
+              className="w-full mt-1 px-3 py-2 text-xs rounded-md bg-gray-100 outline-none h-14 resize-none"
             />
           </div>
 
-          {/* 🔥 PROFILE PHOTO (FIGMA STYLE + REAL) */}
+          {/* PROFILE PHOTO */}
           <div>
-            <label className="text-xs text-gray-700">Profile Photo</label>
+            <label className="text-[11px] text-gray-700">Profile Photo</label>
 
-            <label className="mt-1 border border-dashed border-gray-300 rounded-lg p-4 text-center text-xs text-gray-400 cursor-pointer block hover:bg-gray-50">
+            <label className="mt-1 border border-dashed border-gray-300 rounded-md p-3 text-center text-[11px] text-gray-400 cursor-pointer block hover:bg-gray-50">
 
-              {/* ICON */}
+              {/* ICON (REAL SVG like Figma) */}
               <div className="flex flex-col items-center gap-1">
-                <span className="text-lg">📷</span>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#9CA3AF"
+                  strokeWidth="1.5"
+                >
+                  <path d="M4 7h4l2-2h4l2 2h4v12H4z" />
+                  <circle cx="12" cy="13" r="3" />
+                </svg>
 
                 <span>
                   {profileImage
@@ -80,38 +90,44 @@ export default function StylistApplication() {
                 </span>
               </div>
 
-              {/* HIDDEN INPUT */}
               <input
                 type="file"
-                accept="image/*"
                 className="hidden"
                 onChange={(e) => setProfileImage(e.target.files[0])}
               />
             </label>
           </div>
 
-          {/* 🔥 PORTFOLIO (FIGMA STYLE + REAL) */}
+          {/* PORTFOLIO */}
           <div>
-            <label className="text-xs text-gray-700">Portfolio Images</label>
+            <label className="text-[11px] text-gray-700">Portfolio Images</label>
 
-            <label className="mt-1 border border-dashed border-gray-300 rounded-lg p-4 text-center text-xs text-gray-400 cursor-pointer block hover:bg-gray-50">
+            <label className="mt-1 border border-dashed border-gray-300 rounded-md p-3 text-center text-[11px] text-gray-400 cursor-pointer block hover:bg-gray-50">
 
-              {/* ICON */}
               <div className="flex flex-col items-center gap-1">
-                <span className="text-lg">⬆️</span>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#9CA3AF"
+                  strokeWidth="1.5"
+                >
+                  <path d="M12 16V4" />
+                  <path d="M8 8l4-4 4 4" />
+                  <rect x="4" y="16" width="16" height="4" />
+                </svg>
 
                 <span>
                   {portfolioFiles.length > 0
-                    ? `${portfolioFiles.length} file(s) selected`
+                    ? `${portfolioFiles.length} file(s)`
                     : "Upload portfolio images or PDF (max 10 files)"}
                 </span>
               </div>
 
-              {/* HIDDEN INPUT */}
               <input
                 type="file"
                 multiple
-                accept="image/*,.pdf"
                 className="hidden"
                 onChange={(e) =>
                   setPortfolioFiles(Array.from(e.target.files))
@@ -123,7 +139,7 @@ export default function StylistApplication() {
           {/* BUTTON */}
           <button
             type="submit"
-            className="mt-2 bg-[#7CB98B] hover:bg-[#6aa879] text-white py-2 rounded-lg text-sm transition"
+            className="mt-2 bg-[#7CB98B] hover:bg-[#6aa879] text-white py-2 rounded-md text-xs transition"
           >
             Submit Application
           </button>
