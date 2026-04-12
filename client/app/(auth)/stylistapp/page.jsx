@@ -4,96 +4,16 @@ import Image from "next/image";
 import { useState } from "react";
 
 export default function StylistApplication() {
-
-  const [form, setForm] = useState({
-    full_name: "",
-    email: "",
-    bio: "",
-  });
-
   const [profileImage, setProfileImage] = useState(null);
   const [portfolioFiles, setPortfolioFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  // 🔥 GET LOGGED USER
-  const user = JSON.parse(localStorage.getItem("user"));
-
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!form.full_name || !form.email || !form.bio) {
-      alert("Please fill all fields");
-      return;
-    }
-
-    if (!profileImage) {
-      alert("Please upload a profile image");
-      return;
-    }
-
-    if (!user) {
-      alert("You must be logged in");
-      return;
-    }
-
-    setLoading(true);
-
-    const formData = new FormData();
-
-    formData.append("full_name", form.full_name);
-    formData.append("email", form.email);
-    formData.append("bio", form.bio);
-
-    // 🔥 IMPORTANT
-    formData.append("user_id", user.user_id);
-
-    formData.append("profileImage", profileImage);
-
-    portfolioFiles.forEach((file) => {
-      formData.append("portfolio", file);
-    });
-
-    try {
-      const res = await fetch("http://localhost:5000/api/stylist/apply", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        alert("Application submitted successfully!");
-
-        setForm({
-          full_name: "",
-          email: "",
-          bio: "",
-        });
-        setProfileImage(null);
-        setPortfolioFiles([]);
-      } else {
-        alert(data.message || "Something went wrong");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Server error");
-    }
-
-    setLoading(false);
-  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F3EDE7] px-4 py-10">
+    <div className="min-h-screen flex items-center justify-center bg-[#F3EDE7] px-4">
 
+      {/* CARD */}
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
 
+        {/* LOGO */}
         <Image
           src="/logo.png"
           alt="Naseq Logo"
@@ -102,6 +22,7 @@ export default function StylistApplication() {
           className="mb-2 object-contain"
         />
 
+        {/* TITLE */}
         <h2 className="text-lg font-semibold text-gray-800">
           Apply as a Stylist
         </h2>
@@ -110,55 +31,101 @@ export default function StylistApplication() {
           Submit your application to join our stylist community
         </p>
 
-        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3">
+        {/* FORM */}
+        <form className="w-full flex flex-col gap-3">
 
-          <input
-            type="text"
-            name="full_name"
-            value={form.full_name}
-            onChange={handleChange}
-            placeholder="Full Name"
-            className="bg-gray-100 p-2 rounded"
-          />
+          {/* NAME */}
+          <div>
+            <label className="text-xs text-gray-700">Full Name</label>
+            <input
+              type="text"
+              placeholder="Your full name"
+              className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none"
+            />
+          </div>
 
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="Email"
-            className="bg-gray-100 p-2 rounded"
-          />
+          {/* EMAIL */}
+          <div>
+            <label className="text-xs text-gray-700">Email</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none"
+            />
+          </div>
 
-          <textarea
-            name="bio"
-            value={form.bio}
-            onChange={handleChange}
-            placeholder="Short Bio"
-            className="bg-gray-100 p-2 rounded"
-          />
+          {/* BIO */}
+          <div>
+            <label className="text-xs text-gray-700">Short Bio</label>
+            <textarea
+              placeholder="Tell us about your styling experience..."
+              className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none h-16 resize-none"
+            />
+          </div>
 
-          {/* PROFILE */}
-          <input
-            type="file"
-            onChange={(e) => setProfileImage(e.target.files[0])}
-          />
+          {/* 🔥 PROFILE PHOTO (FIGMA STYLE + REAL) */}
+          <div>
+            <label className="text-xs text-gray-700">Profile Photo</label>
 
-          {/* PORTFOLIO */}
-          <input
-            type="file"
-            multiple
-            onChange={(e) =>
-              setPortfolioFiles(Array.from(e.target.files))
-            }
-          />
+            <label className="mt-1 border border-dashed border-gray-300 rounded-lg p-4 text-center text-xs text-gray-400 cursor-pointer block hover:bg-gray-50">
 
+              {/* ICON */}
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-lg">📷</span>
+
+                <span>
+                  {profileImage
+                    ? profileImage.name
+                    : "Click to upload profile photo JPG, PNG up to 5MB"}
+                </span>
+              </div>
+
+              {/* HIDDEN INPUT */}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => setProfileImage(e.target.files[0])}
+              />
+            </label>
+          </div>
+
+          {/* 🔥 PORTFOLIO (FIGMA STYLE + REAL) */}
+          <div>
+            <label className="text-xs text-gray-700">Portfolio Images</label>
+
+            <label className="mt-1 border border-dashed border-gray-300 rounded-lg p-4 text-center text-xs text-gray-400 cursor-pointer block hover:bg-gray-50">
+
+              {/* ICON */}
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-lg">⬆️</span>
+
+                <span>
+                  {portfolioFiles.length > 0
+                    ? `${portfolioFiles.length} file(s) selected`
+                    : "Upload portfolio images or PDF (max 10 files)"}
+                </span>
+              </div>
+
+              {/* HIDDEN INPUT */}
+              <input
+                type="file"
+                multiple
+                accept="image/*,.pdf"
+                className="hidden"
+                onChange={(e) =>
+                  setPortfolioFiles(Array.from(e.target.files))
+                }
+              />
+            </label>
+          </div>
+
+          {/* BUTTON */}
           <button
             type="submit"
-            disabled={loading}
-            className="bg-green-500 text-white py-2 rounded"
+            className="mt-2 bg-[#7CB98B] hover:bg-[#6aa879] text-white py-2 rounded-lg text-sm transition"
           >
-            {loading ? "Submitting..." : "Submit"}
+            Submit Application
           </button>
 
         </form>
