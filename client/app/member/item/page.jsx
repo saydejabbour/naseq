@@ -9,6 +9,7 @@ const CATEGORIES = [
   { id: 2, name: "Bottoms" },
   { id: 3, name: "Shoes" },
   { id: 4, name: "Accessories" },
+  { id: 5, name: "Dress" },
 ];
 
 const COLORS = [
