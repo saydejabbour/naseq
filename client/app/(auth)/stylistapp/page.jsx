@@ -2,13 +2,41 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function StylistApplication() {
+  const router = useRouter();
+  const { updateUser } = useAuth();
+
   const [profileImage, setProfileImage] = useState(null);
   const [portfolioFiles, setPortfolioFiles] = useState([]);
 
+  // ✅ ONLY LOGIC ADDED HERE
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user) {
+      alert("You must be logged in");
+      return;
+    }
+
+    const updatedUser = {
+      ...user,
+      stylistApplication: {
+        status: "pending",
+      },
+    };
+
+    updateUser(updatedUser);
+
+    router.push("/member");
+  };
+
   return (
-    <div className="h-screen flex items-center justify-center bg-[#F3EDE7]">
+    <div className="min-h-screen flex items-center justify-center bg-[#F3EDE7] px-4">
 
       {/* CARD */}
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg px-6 py-5 flex flex-col items-center">
@@ -32,7 +60,7 @@ export default function StylistApplication() {
         </p>
 
         {/* FORM */}
-        <form className="w-full flex flex-col gap-2">
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-2">
 
           {/* NAME */}
           <div>
@@ -69,8 +97,8 @@ export default function StylistApplication() {
 
             <label className="mt-1 border border-dashed border-gray-300 rounded-md p-3 text-center text-[11px] text-gray-400 cursor-pointer block hover:bg-gray-50">
 
-              {/* ICON (REAL SVG like Figma) */}
               <div className="flex flex-col items-center gap-1">
+                {/* CAMERA ICON (UNCHANGED) */}
                 <svg
                   width="20"
                   height="20"
@@ -105,6 +133,7 @@ export default function StylistApplication() {
             <label className="mt-1 border border-dashed border-gray-300 rounded-md p-3 text-center text-[11px] text-gray-400 cursor-pointer block hover:bg-gray-50">
 
               <div className="flex flex-col items-center gap-1">
+                {/* UPLOAD ICON (UNCHANGED) */}
                 <svg
                   width="20"
                   height="20"

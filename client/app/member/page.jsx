@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 /* ✅ LUCIDE ICONS */
 import {
@@ -51,6 +52,7 @@ const cards = [
 
 export default function MemberDashboard() {
   const router = useRouter();
+  const { user } = useAuth();
 
   return (
     <div className="p-10 bg-[#FDF8F3] min-h-screen">
@@ -72,6 +74,38 @@ export default function MemberDashboard() {
           Your style companion is ready — here's what you can do.
         </p>
       </div>
+
+      {/* 🔥 APPLICATION STATUS */}
+      {user?.stylistApplication && (
+        <div className="mb-8">
+
+          {/* PENDING */}
+          {user.stylistApplication.status === "pending" && (
+            <div className="bg-[#FFF3E0] border border-orange-200 text-orange-700 px-5 py-3 rounded-xl text-sm">
+              Your stylist application is under review
+            </div>
+          )}
+
+          {/* APPROVED */}
+          {user.stylistApplication.status === "approved" && (
+            <div className="bg-[#E8F5E9] border border-green-200 px-5 py-4 rounded-xl flex items-center justify-between">
+              
+              <span className="text-green-700 text-sm font-medium">
+                You are approved as a stylist!
+              </span>
+
+              <button
+                onClick={() => router.push("/stylist")}
+                className="bg-[#7CB98B] hover:bg-[#6aa879] text-white px-4 py-2 rounded-md text-xs"
+              >
+                Go to Dashboard
+              </button>
+
+            </div>
+          )}
+
+        </div>
+      )}
 
       {/* SECTION */}
       <div className="flex items-center gap-3 mb-6">
@@ -96,7 +130,6 @@ export default function MemberDashboard() {
                 min-h-[200px]
                 hover:shadow-lg hover:-translate-y-1 transition`}
             >
-              {/* TOP */}
               <div className="flex items-start justify-between">
                 <div className={`${card.iconBg} ${card.iconColor} w-11 h-11 rounded-xl flex items-center justify-center`}>
                   <Icon size={20} />
@@ -107,7 +140,6 @@ export default function MemberDashboard() {
                 </span>
               </div>
 
-              {/* CONTENT */}
               <div>
                 <h3 className="text-xl font-serif text-[#1a2e1a] mb-1">
                   {card.label}
@@ -117,7 +149,6 @@ export default function MemberDashboard() {
                 </p>
               </div>
 
-              {/* CTA */}
               <div className={`flex items-center gap-1 text-sm font-medium ${card.arrowColor}`}>
                 <span>Get started</span>
                 <ArrowRight size={16} />

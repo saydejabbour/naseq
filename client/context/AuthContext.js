@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 🔥 LOAD USER FROM LOCALSTORAGE
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -21,6 +22,7 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // 🔹 LOGIN
   const login = async (email, password) => {
     try {
       const res = await fetch("http://localhost:5000/api/auth/login", {
@@ -48,13 +50,22 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // 🔹 LOGOUT
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
   };
 
+  // 🔥 NEW FUNCTION (VERY IMPORTANT)
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, isLoading, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
