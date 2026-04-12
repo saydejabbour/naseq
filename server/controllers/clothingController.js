@@ -12,7 +12,7 @@ dotenv.config();
 const UPLOAD_DIR = "uploads";
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
 
-// ── multer: store original upload temporarily ────────────
+// ── multer config ────────────────────────────────────────
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => cb(null, `orig-${Date.now()}.png`),
@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("image/")) cb(null, true);
     else cb(new Error("Only image files are allowed"), false);
@@ -33,19 +33,19 @@ export const addItem = async (req, res) => {
   let cleanPath = null;
 
   try {
-    // ── 1. validate required body fields ─────────────────
     const { category_id, color, style, season, occasion, user_id } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required." });
     }
+
     if (!category_id || !color || !style || !season || !occasion || !user_id) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
     originalPath = req.file.path;
 
-    // ── 2. remove background via remove.bg ───────────────
+    // 🔥 REMOVE BACKGROUND
     const formData = new FormData();
     formData.append("image_file", fs.createReadStream(originalPath));
     formData.append("size", "auto");
@@ -56,26 +56,25 @@ export const addItem = async (req, res) => {
       {
         headers: {
           ...formData.getHeaders(),
-          "X-Api-Key": process.env.REMOVE_BG_API_KEY, // set in your .env
+          "X-Api-Key": process.env.REMOVE_BG_API_KEY,
         },
         responseType: "arraybuffer",
-        timeout: 30_000,
       }
     );
 
+    // save clean image
     cleanPath = path.join(UPLOAD_DIR, `clean-${Date.now()}.png`);
     fs.writeFileSync(cleanPath, bgResponse.data);
 
-    // delete the original (we only keep the clean version)
+    // delete original
     fs.unlinkSync(originalPath);
-    originalPath = null;
 
-    // ── 3. save to database ───────────────────────────────
-    const imageUrl = "/" + cleanPath.replace(/\\/g, "/"); // normalize Windows paths
+    const imageUrl = "/" + cleanPath.replace(/\\/g, "/");
 
+    // 🔥 SAVE TO DB
     const query = `
       INSERT INTO clothing_items
-        (user_id, category_id, image_url, color, style, season, occasion)
+      (user_id, category_id, image_url, color, style, season, occasion)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
@@ -84,38 +83,36 @@ export const addItem = async (req, res) => {
       [user_id, category_id, imageUrl, color, style, season, occasion],
       (err, result) => {
         if (err) {
-          console.error("DB insert error:", err);
-          // clean up clean image if DB fails
-          if (cleanPath && fs.existsSync(cleanPath)) fs.unlinkSync(cleanPath);
+          console.error("DB error:", err);
           return res.status(500).json({ message: "Database error." });
         }
 
-        return res.status(201).json({
+        return res.json({
           success: true,
-          message: "Item added successfully.",
+          message: "Item added successfully",
           item_id: result.insertId,
           image_url: imageUrl,
         });
       }
     );
   } catch (err) {
-    // clean up any leftover files on error
+    console.error("addItem error:", err);
+
+    // 🔥 CLEAN FILES IF ERROR
     if (originalPath && fs.existsSync(originalPath)) fs.unlinkSync(originalPath);
     if (cleanPath && fs.existsSync(cleanPath)) fs.unlinkSync(cleanPath);
 
     if (err.response) {
-      // remove.bg returned an error
-      const msg = err.response.data?.toString() || "remove.bg API error";
-      console.error("remove.bg error:", msg);
-      return res.status(502).json({ message: "Background removal failed. Try again." });
+      return res.status(500).json({
+        message: "Background removal failed. Check API key.",
+      });
     }
 
-    console.error("addItem error:", err);
     return res.status(500).json({ message: "Server error." });
   }
 };
 
-// ── GET ALL ITEMS FOR A USER ──────────────────────────────
+// ── GET USER ITEMS ───────────────────────────────────────
 export const getUserItems = (req, res) => {
   const { user_id } = req.params;
 
@@ -129,36 +126,49 @@ export const getUserItems = (req, res) => {
 
   db.query(query, [user_id], (err, results) => {
     if (err) {
-      console.error("getUserItems error:", err);
+      console.error(err);
       return res.status(500).json({ message: "Database error." });
     }
-    return res.json({ success: true, items: results });
+
+    return res.json({
+      success: true,
+      items: results,
+    });
   });
 };
 
-// ── DELETE ITEM ───────────────────────────────────────────
+// ── DELETE ITEM ──────────────────────────────────────────
 export const deleteItem = (req, res) => {
   const { item_id } = req.params;
 
-  // first fetch image path so we can delete the file
   db.query(
     "SELECT image_url FROM clothing_items WHERE item_id = ?",
     [item_id],
     (err, rows) => {
-      if (err) return res.status(500).json({ message: "Database error." });
-      if (!rows.length) return res.status(404).json({ message: "Item not found." });
+      if (err) return res.status(500).json({ message: "DB error" });
 
-      const filePath = rows[0].image_url.replace(/^\//, ""); // strip leading /
+      if (!rows.length) {
+        return res.status(404).json({ message: "Item not found" });
+      }
+
+      const filePath = rows[0].image_url.replace(/^\//, "");
+
       if (fs.existsSync(filePath)) {
-        try { fs.unlinkSync(filePath); } catch (_) {}
+        try {
+          fs.unlinkSync(filePath);
+        } catch (e) {}
       }
 
       db.query(
         "DELETE FROM clothing_items WHERE item_id = ?",
         [item_id],
-        (delErr) => {
-          if (delErr) return res.status(500).json({ message: "Delete failed." });
-          return res.json({ success: true, message: "Item deleted." });
+        (err) => {
+          if (err) return res.status(500).json({ message: "Delete failed" });
+
+          return res.json({
+            success: true,
+            message: "Item deleted",
+          });
         }
       );
     }

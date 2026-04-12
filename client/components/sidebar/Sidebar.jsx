@@ -34,6 +34,8 @@ export default function Sidebar({ role }) {
 
     stylist: [
       { label: "Dashboard", href: "/stylist", icon: LayoutDashboard },
+      { label: "My Wardrobe", href: "/stylist/wardrobe", icon: Shirt },
+      { label: "Add Item", href: "/stylist/item", icon: PlusCircle },
       { label: "Create Template", href: "/stylist/create", icon: PlusCircle },
       { label: "My Templates", href: "/stylist/templates", icon: LayoutGrid },
     ],
