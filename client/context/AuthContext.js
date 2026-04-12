@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
-  // 🔥 Load user from localStorage
+  // 🔥 LOAD USER FROM LOCAL STORAGE
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // 🔹 LOGIN
+  // 🔹 LOGIN FUNCTION
   const login = async (email, password) => {
     try {
       const res = await fetch("http://localhost:5000/api/auth/login", {
@@ -32,18 +32,27 @@ export function AuthProvider({ children }) {
 
       const data = await res.json();
 
-      if (!res.ok) {
+      if (!res.ok || !data.success) {
         throw new Error(data.message || "Login failed");
       }
 
       const userData = data.data;
 
+      // ✅ SAVE USER
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
 
-      return { success: true, user: userData };
+      // 🔥 IMPORTANT: RETURN SAME STRUCTURE
+      return {
+        success: true,
+        data: userData,
+      };
+
     } catch (err) {
-      return { success: false, message: err.message };
+      return {
+        success: false,
+        message: err.message,
+      };
     }
   };
 
