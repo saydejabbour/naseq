@@ -18,6 +18,7 @@ export default function SignupPage() {
 
   const [loading, setLoading] = useState(false);
 
+  // 🔹 HANDLE INPUT CHANGE
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -25,10 +26,12 @@ export default function SignupPage() {
     });
   };
 
+  // 🔹 HANDLE ROLE CHANGE
   const handleRoleChange = (role) => {
     setForm({ ...form, role });
   };
 
+  // 🔥 HANDLE SUBMIT (UPDATED WITH REDIRECT)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -55,7 +58,14 @@ export default function SignupPage() {
 
     if (res.success) {
       alert("Account created successfully!");
-      router.push("/login");
+
+      // 🔥 SMART REDIRECT BASED ON ROLE
+      if (form.role === "member") {
+        router.push("/member");
+      } else if (form.role === "stylist") {
+        router.push("/stylistapp");
+      }
+
     } else {
       alert(res.message);
     }

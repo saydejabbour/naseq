@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // 🔹 HANDLE INPUT CHANGE
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -24,7 +25,7 @@ export default function LoginPage() {
     });
   };
 
-  // 🔥 LOGIN HANDLER (UPDATED)
+  // 🔥 LOGIN HANDLER
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -77,7 +78,7 @@ export default function LoginPage() {
             Sign in to your account
           </p>
 
-          {/* ERROR MESSAGE */}
+          {/* ERROR */}
           {error && (
             <p className="text-red-500 text-sm text-center mb-4">
               {error}
@@ -147,6 +148,7 @@ export default function LoginPage() {
 
           {/* BOTTOM TEXT */}
           <div className="text-center mt-8 text-sm">
+
             <p className="text-gray-600">
               Don’t have an account?{" "}
               <Link href="/signup" className="text-[#7CB98B] hover:underline">
@@ -154,12 +156,17 @@ export default function LoginPage() {
               </Link>
             </p>
 
+            {/* 🔥 FIXED APPLY LINK */}
             <p className="mt-2 text-gray-700">
               Are you a stylist?{" "}
-              <span className="text-[#F5A962] cursor-pointer hover:underline">
+              <Link
+                href="/stylistapp"
+                className="text-[#F5A962] hover:underline"
+              >
                 Apply here
-              </span>
+              </Link>
             </p>
+
           </div>
 
         </div>
