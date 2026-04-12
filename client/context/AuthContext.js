@@ -6,8 +6,8 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 🔥 LOAD USER FROM LOCAL STORAGE
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -16,10 +16,11 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       console.error("Error parsing user:", err);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
-  // 🔹 LOGIN FUNCTION
   const login = async (email, password) => {
     try {
       const res = await fetch("http://localhost:5000/api/auth/login", {
@@ -32,50 +33,37 @@ export function AuthProvider({ children }) {
 
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
+      if (!res.ok) {
         throw new Error(data.message || "Login failed");
       }
 
       const userData = data.data;
 
-      // ✅ SAVE USER
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
 
-      // 🔥 IMPORTANT: RETURN SAME STRUCTURE
-      return {
-        success: true,
-        data: userData,
-      };
-
+      return { success: true };
     } catch (err) {
-      return {
-        success: false,
-        message: err.message,
-      };
+      return { success: false, message: err.message };
     }
   };
 
-  // 🔹 LOGOUT
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-// 🔹 CUSTOM HOOK
 export function useAuth() {
   const context = useContext(AuthContext);
-
   if (!context) {
     throw new Error("useAuth must be used inside AuthProvider");
   }
-
   return context;
 }
