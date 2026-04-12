@@ -51,8 +51,12 @@ export const login = (req, res) => {
   }
 
   const query = "SELECT * FROM users WHERE email = ?";
+  
 
   db.query(query, [email], async (err, results) => {
+          console.log("USER FROM DB:", results);
+
+    
     if (err) return errorResponse(res, "Database error");
 
     if (results.length === 0) {
@@ -66,7 +70,7 @@ export const login = (req, res) => {
     if (!isMatch) {
       return errorResponse(res, "Invalid email or password", 401);
     }
-
+    
     return successResponse(res, "Login successful", {
       user_id: user.user_id,
       full_name: user.full_name,
