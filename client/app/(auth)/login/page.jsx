@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -23,7 +24,7 @@ export default function LoginPage() {
     });
   };
 
-  // ✅ CLEAN LOGIN HANDLER
+  // ✅ LOGIN HANDLER
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -40,7 +41,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (res.success) {
-      router.push("/"); // ✅ redirect WITHOUT alert
+      router.push("/");
     } else {
       setError(res.message || "Login failed");
     }
@@ -69,7 +70,7 @@ export default function LoginPage() {
             Sign in to your account
           </p>
 
-          {/* 🔴 ERROR MESSAGE */}
+          {/* ERROR MESSAGE */}
           {error && (
             <p className="text-red-500 text-sm text-center mb-4">
               {error}
@@ -87,7 +88,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 name="email"
-                placeholder="You@example.com"
+                placeholder="you@example.com"
                 value={form.email}
                 onChange={handleChange}
                 disabled={loading}
@@ -102,9 +103,13 @@ export default function LoginPage() {
                   Password
                 </label>
 
-                <span className="text-xs text-[#7CB98B] cursor-pointer hover:underline">
-                  Forget Password?
-                </span>
+                {/* ✅ FIXED RESET LINK */}
+                <Link
+                  href="/reset-password"
+                  className="text-xs text-[#7CB98B] hover:underline"
+                >
+                  Forgot Password?
+                </Link>
               </div>
 
               <input
@@ -138,9 +143,9 @@ export default function LoginPage() {
           <div className="text-center mt-8 text-sm">
             <p className="text-gray-600">
               Don’t have an account?{" "}
-              <a href="/signup" className="text-[#7CB98B] hover:underline">
+              <Link href="/signup" className="text-[#7CB98B] hover:underline">
                 Sign Up
-              </a>
+              </Link>
             </p>
 
             <p className="mt-2 text-gray-700">
