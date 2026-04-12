@@ -9,6 +9,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
 
+
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -38,21 +39,23 @@ export default function LoginPage() {
     setLoading(true);
 
     const res = await login(form.email, form.password);
+    console.log("LOGIN RESPONSE:", res);
 
     setLoading(false);
 
     if (res.success) {
       // 🔥 ROLE-BASED REDIRECT
-      if (res.data.role === "member") {
+      if (res.user.role === "member") {
         router.push("/member");
-      } else if (res.data.role === "stylist") {
+      } else if (res.user.role === "stylist") {
         router.push("/stylist");
       } else {
         router.push("/");
       }
     } else {
       setError(res.message || "Login failed");
-    }
+    } 
+
   };
 
   return (

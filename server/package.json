@@ -17,10 +17,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-<<<<<<< HEAD
-=======
     "form-data": "^4.0.5",
->>>>>>> 027c5f8b06f00ee07065f9abfeb3e18be4f72c45
     "multer": "^2.1.1",
     "mysql2": "^3.20.0",
     "nodemailer": "^8.0.5"
