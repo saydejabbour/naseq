@@ -61,3 +61,10 @@ body {
 .animate-pulseCustom {
   animation: pulseCustom 1.4s ease-in-out infinite;
 }
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none !important;
+}
