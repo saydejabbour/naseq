@@ -5,7 +5,6 @@ import { useState } from "react";
 
 export default function StylistApplication() {
 
-  // 🔥 FORM STATE
   const [form, setForm] = useState({
     full_name: "",
     email: "",
@@ -14,10 +13,11 @@ export default function StylistApplication() {
 
   const [profileImage, setProfileImage] = useState(null);
   const [portfolioFiles, setPortfolioFiles] = useState([]);
-
   const [loading, setLoading] = useState(false);
 
-  // 🔹 HANDLE INPUT CHANGE
+  // 🔥 GET LOGGED USER
+  const user = JSON.parse(localStorage.getItem("user"));
+
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -25,7 +25,6 @@ export default function StylistApplication() {
     });
   };
 
-  // 🔥 SUBMIT HANDLER (CONNECTED TO BACKEND)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -39,6 +38,11 @@ export default function StylistApplication() {
       return;
     }
 
+    if (!user) {
+      alert("You must be logged in");
+      return;
+    }
+
     setLoading(true);
 
     const formData = new FormData();
@@ -46,6 +50,10 @@ export default function StylistApplication() {
     formData.append("full_name", form.full_name);
     formData.append("email", form.email);
     formData.append("bio", form.bio);
+
+    // 🔥 IMPORTANT
+    formData.append("user_id", user.user_id);
+
     formData.append("profileImage", profileImage);
 
     portfolioFiles.forEach((file) => {
@@ -62,8 +70,7 @@ export default function StylistApplication() {
 
       if (data.success) {
         alert("Application submitted successfully!");
-        
-        // 🔥 RESET FORM
+
         setForm({
           full_name: "",
           email: "",
@@ -87,7 +94,6 @@ export default function StylistApplication() {
 
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
 
-        {/* LOGO */}
         <Image
           src="/logo.png"
           alt="Naseq Logo"
@@ -96,7 +102,6 @@ export default function StylistApplication() {
           className="mb-2 object-contain"
         />
 
-        {/* TITLE */}
         <h2 className="text-lg font-semibold text-gray-800">
           Apply as a Stylist
         </h2>
@@ -105,99 +110,55 @@ export default function StylistApplication() {
           Submit your application to join our stylist community
         </p>
 
-        {/* FORM */}
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3">
 
-          {/* NAME */}
-          <div>
-            <label className="text-xs text-gray-700">Full Name</label>
-            <input
-              type="text"
-              name="full_name"
-              value={form.full_name}
-              onChange={handleChange}
-              placeholder="Your full name"
-              className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none"
-            />
-          </div>
+          <input
+            type="text"
+            name="full_name"
+            value={form.full_name}
+            onChange={handleChange}
+            placeholder="Full Name"
+            className="bg-gray-100 p-2 rounded"
+          />
 
-          {/* EMAIL */}
-          <div>
-            <label className="text-xs text-gray-700">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="you@example.com"
-              className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none"
-            />
-          </div>
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            placeholder="Email"
+            className="bg-gray-100 p-2 rounded"
+          />
 
-          {/* BIO */}
-          <div>
-            <label className="text-xs text-gray-700">Short Bio</label>
-            <textarea
-              name="bio"
-              value={form.bio}
-              onChange={handleChange}
-              placeholder="Tell us about your styling experience..."
-              className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none h-16 resize-none"
-            />
-          </div>
+          <textarea
+            name="bio"
+            value={form.bio}
+            onChange={handleChange}
+            placeholder="Short Bio"
+            className="bg-gray-100 p-2 rounded"
+          />
 
-          {/* PROFILE PHOTO */}
-          <div>
-            <label className="text-xs text-gray-700">Profile Photo</label>
-
-            <label className="mt-1 border border-dashed border-gray-300 rounded-lg p-4 text-center text-xs text-gray-400 cursor-pointer block hover:bg-gray-50">
-
-              {profileImage
-                ? profileImage.name
-                : "Click to upload JPG, PNG up to 5MB"}
-
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => setProfileImage(e.target.files[0])}
-              />
-            </label>
-          </div>
+          {/* PROFILE */}
+          <input
+            type="file"
+            onChange={(e) => setProfileImage(e.target.files[0])}
+          />
 
           {/* PORTFOLIO */}
-          <div>
-            <label className="text-xs text-gray-700">Portfolio</label>
+          <input
+            type="file"
+            multiple
+            onChange={(e) =>
+              setPortfolioFiles(Array.from(e.target.files))
+            }
+          />
 
-            <label className="mt-1 border border-dashed border-gray-300 rounded-lg p-4 text-center text-xs text-gray-400 cursor-pointer block hover:bg-gray-50">
-
-              {portfolioFiles.length > 0
-                ? `${portfolioFiles.length} file(s) selected`
-                : "Upload images or PDF"}
-
-              <input
-                type="file"
-                multiple
-                accept="image/*,.pdf"
-                className="hidden"
-                onChange={(e) =>
-                  setPortfolioFiles(Array.from(e.target.files))
-                }
-              />
-            </label>
-          </div>
-
-          {/* BUTTON */}
           <button
             type="submit"
             disabled={loading}
-            className={`mt-2 py-2 rounded-lg text-sm transition ${
-              loading
-                ? "bg-gray-400"
-                : "bg-[#7CB98B] hover:bg-[#6aa879] text-white"
-            }`}
+            className="bg-green-500 text-white py-2 rounded"
           >
-            {loading ? "Submitting..." : "Submit Application"}
+            {loading ? "Submitting..." : "Submit"}
           </button>
 
         </form>

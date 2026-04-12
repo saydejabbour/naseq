@@ -4,7 +4,7 @@ import db from "../config/db.js";
 
 const router = express.Router();
 
-// 🔥 STORAGE
+// STORAGE
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -16,7 +16,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// 🔥 APPLY ROUTE
 router.post(
   "/apply",
   upload.fields([
@@ -28,12 +27,9 @@ router.post(
       console.log("BODY:", req.body);
       console.log("FILES:", req.files);
 
-      const { full_name, email, bio } = req.body;
+      const { full_name, email, bio, user_id } = req.body;
 
       const profileImage = req.files["profileImage"]?.[0]?.filename;
-
-      // 🚨 TEMP FIX: ADD user_id
-      const userId = 1; // later we replace with logged-in user
 
       const query = `
         INSERT INTO stylist_applications 
@@ -43,7 +39,7 @@ router.post(
 
       db.query(
         query,
-        [full_name, email, bio, profileImage, userId],
+        [full_name, email, bio, profileImage, user_id],
         (err, result) => {
           if (err) {
             console.error("DB ERROR:", err);
@@ -53,27 +49,18 @@ router.post(
             });
           }
 
-          console.log("INSERTED ID:", result.insertId);
-
-          // 🔥 SAVE PORTFOLIO IMAGES
           const portfolioFiles = req.files["portfolio"] || [];
 
           if (portfolioFiles.length > 0) {
-            const portfolioQuery = `
-              INSERT INTO portfolio_images (stylist_id, image_url)
-              VALUES ?
-            `;
-
             const values = portfolioFiles.map((file) => [
               result.insertId,
               file.filename,
             ]);
 
-            db.query(portfolioQuery, [values], (err2) => {
-              if (err2) {
-                console.error("PORTFOLIO ERROR:", err2);
-              }
-            });
+            db.query(
+              "INSERT INTO portfolio_images (stylist_id, image_url) VALUES ?",
+              [values]
+            );
           }
 
           return res.json({
@@ -85,7 +72,7 @@ router.post(
 
     } catch (err) {
       console.error(err);
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: "Server error",
       });
