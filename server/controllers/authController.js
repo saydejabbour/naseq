@@ -7,13 +7,14 @@ import { sendEmail } from "../utils/sendEmail.js";
 
 // ================= REGISTER =================
 export const register = async (req, res) => {
-  const { full_name, email, password } = req.body;
+  const { full_name, email, password, role } = req.body;
 
   if (!full_name || !email || !password) {
     return errorResponse(res, "All fields are required", 400);
   }
 
   try {
+    // CHECK IF EMAIL EXISTS
     db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
       if (err) return errorResponse(res, "Database error");
 
@@ -21,17 +22,27 @@ export const register = async (req, res) => {
         return errorResponse(res, "Email already exists", 400);
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      try {
+        // HASH PASSWORD
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-      db.query(
-        "INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)",
-        [full_name, email, hashedPassword, "member"],
-        (err) => {
-          if (err) return errorResponse(res, "Failed to register user");
+        // DEFAULT ROLE
+        const userRole = role || "member";
 
-          return successResponse(res, "Account created successfully");
-        }
-      );
+        // INSERT USER
+        db.query(
+          "INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)",
+          [full_name, email, hashedPassword, userRole],
+          (err) => {
+            if (err) return errorResponse(res, "Failed to register user");
+
+            return successResponse(res, "Account created successfully");
+          }
+        );
+
+      } catch (hashError) {
+        return errorResponse(res, "Password hashing failed");
+      }
     });
 
   } catch (error) {
@@ -49,7 +60,6 @@ export const login = (req, res) => {
     return errorResponse(res, "Email and password are required", 400);
   }
 
-
   db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
     if (err) return errorResponse(res, "Database error");
 
@@ -64,11 +74,12 @@ export const login = (req, res) => {
     if (!isMatch) {
       return errorResponse(res, "Invalid email or password", 401);
     }
-    
+
     return successResponse(res, "Login successful", {
       user_id: user.user_id,
       full_name: user.full_name,
       email: user.email,
+      role: user.role, // 🔥 VERY IMPORTANT
     });
   });
 };
@@ -95,20 +106,18 @@ export const forgotPassword = (req, res) => {
 
       const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 min
 
-      // 💾 Save token in DB
+      // 💾 Save token
       db.query(
         "UPDATE users SET reset_token=?, reset_token_expiry=? WHERE email=?",
         [token, expiry, email],
         async (err) => {
           if (err) return errorResponse(res, "Database error");
 
-          // 🔗 Reset link
           const resetLink = `http://localhost:3000/reset-password/${token}`;
 
           console.log("🔗 RESET LINK:", resetLink);
 
           try {
-            // 📩 SEND EMAIL
             await sendEmail(
               email,
               "Reset Your Password",

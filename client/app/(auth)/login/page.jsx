@@ -24,7 +24,7 @@ export default function LoginPage() {
     });
   };
 
-  // ✅ LOGIN HANDLER
+  // 🔥 LOGIN HANDLER (UPDATED)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -41,7 +41,14 @@ export default function LoginPage() {
     setLoading(false);
 
     if (res.success) {
-      router.push("/");
+      // 🔥 ROLE-BASED REDIRECT
+      if (res.data.role === "member") {
+        router.push("/member");
+      } else if (res.data.role === "stylist") {
+        router.push("/stylist");
+      } else {
+        router.push("/");
+      }
     } else {
       setError(res.message || "Login failed");
     }
@@ -103,7 +110,6 @@ export default function LoginPage() {
                   Password
                 </label>
 
-                {/* ✅ FIXED RESET LINK */}
                 <Link
                   href="/reset-password"
                   className="text-xs text-[#7CB98B] hover:underline"

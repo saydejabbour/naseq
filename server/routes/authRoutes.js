@@ -3,8 +3,13 @@ import { register, login, forgotPassword } from "../controllers/authController.j
 
 const router = express.Router();
 
+// ✅ REGISTER
 router.post("/register", register);
+
+// ✅ LOGIN
 router.post("/login", login);
-router.post("/forgot-password", forgotPassword); // ✅ ADD THIS
+
+// ✅ FORGOT PASSWORD
+router.post("/forgot-password", forgotPassword);
 
 export default router;

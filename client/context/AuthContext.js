@@ -6,9 +6,8 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // ← KEY: true until we check localStorage
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load user from localStorage ONCE on mount
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -17,28 +16,33 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       console.error("Error parsing user:", err);
-      localStorage.removeItem("user"); // clear corrupted data
     } finally {
-      setIsLoading(false); // ← always mark as done, even if no user found
+      setIsLoading(false);
     }
-  }, []); // empty array = runs once, no loop
+  }, []);
 
   const login = async (email, password) => {
     try {
       const res = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
+
+      if (!res.ok) {
+        throw new Error(data.message || "Login failed");
+      }
 
       const userData = data.data;
+
       setUser(userData);
       localStorage.setItem("user", JSON.stringify(userData));
 
-      return { success: true, user: userData };
+      return { success: true };
     } catch (err) {
       return { success: false, message: err.message };
     }
@@ -50,7 +54,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -58,6 +62,8 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used inside AuthProvider");
+  if (!context) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
   return context;
 }

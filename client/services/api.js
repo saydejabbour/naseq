@@ -10,8 +10,16 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
       body: body ? JSON.stringify(body) : null,
     });
 
-    return await res.json();
+    const data = await res.json();
+
+    // 🔥 DEBUG (VERY IMPORTANT)
+    console.log("API RESPONSE:", data);
+
+    return data;
+
   } catch (error) {
+    console.error("API ERROR:", error);
+
     return {
       success: false,
       message: "Server not reachable",
@@ -20,10 +28,13 @@ export const apiRequest = async (endpoint, method = "GET", body = null) => {
 };
 
 
+// ================= OUTFITS =================
 export const getOutfits = async () => {
   return await apiRequest("/outfits");
 };
 
+
+// ================= SAVE TEMPLATE =================
 export const saveTemplate = async (user_id, template_id) => {
   return await apiRequest("/saved-templates", "POST", {
     user_id,
@@ -31,6 +42,8 @@ export const saveTemplate = async (user_id, template_id) => {
   });
 };
 
+
+// ================= CONTACT =================
 export const sendContactMessage = async (formData) => {
   return await apiRequest("/contact", "POST", formData);
 };
