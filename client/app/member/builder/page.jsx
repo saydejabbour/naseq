@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Trash2, RotateCw } from "lucide-react";
+import html2canvas from "html2canvas"; // ✅ IMPORTANT
 
 function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
-
   const handleSelect = (e) => {
     e.stopPropagation();
     onSelect(item.id);
@@ -149,7 +149,6 @@ export default function OutfitBuilderPage() {
   const [selectedId, setSelectedId] = useState(null);
   const [category, setCategory] = useState("");
 
-  // FETCH
   useEffect(() => {
     if (!user?.user_id) return;
 
@@ -158,7 +157,6 @@ export default function OutfitBuilderPage() {
       .then((data) => setItems(data.items || []));
   }, [user]);
 
-  // FILTER
   const filteredItems = items.filter((item) => {
     if (!category) return true;
     return item.category_name?.toLowerCase() === category.toLowerCase();
@@ -169,6 +167,7 @@ export default function OutfitBuilderPage() {
       ...prev,
       {
         id: Date.now(),
+        item_id: item.item_id,
         imageUrl: `http://localhost:5000${item.image_url}`,
         x: 200,
         y: 150,
@@ -190,20 +189,71 @@ export default function OutfitBuilderPage() {
     setSelectedId(null);
   };
 
-  const handleSave = () => {
-    console.log("Saved outfit:", canvasItems);
+  // ✅ FINAL SAVE (IMAGE)
+  const handleSave = async () => {
+    if (!user?.user_id) {
+      alert("Login first");
+      return;
+    }
+
+    if (canvasItems.length === 0) {
+      alert("Add items first");
+      return;
+    }
+
+    try {
+      const canvasElement = document.getElementById("outfit-canvas");
+
+     const canvas = await html2canvas(canvasElement, {
+  useCORS: true,
+  allowTaint: true,
+  backgroundColor: null,
+
+  scale: 1, // 🔥 THIS FIXES SIZE
+  width: canvasElement.offsetWidth,
+  height: canvasElement.offsetHeight,
+
+  scrollX: 0,
+  scrollY: 0,
+});
+
+      const image = canvas.toDataURL("image/png");
+
+      const res = await fetch("http://localhost:5000/api/outfits/save-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: user.user_id,
+          image,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Outfit saved ✅");
+        setCanvasItems([]);
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error saving outfit");
+    }
   };
 
   return (
     <div className="h-screen flex bg-[#FDF8F3] overflow-hidden">
-
       {/* LEFT CANVAS */}
       <div className="flex-1 p-8">
         <h1 className="text-3xl font-serif mb-6">Outfit Builder</h1>
 
         <div
+          id="outfit-canvas" // ✅ IMPORTANT
           onClick={() => setSelectedId(null)}
-      className="w-[800px] h-[550px] border-2 border-dashed border-[#d6d6d6] rounded-xl bg-white relative"
+          className="w-[800px] h-[550px] border-2 border-dashed border-[#d6d6d6] rounded-xl bg-white relative"
         >
           {canvasItems.map((item) => (
             <CanvasItem
@@ -219,9 +269,8 @@ export default function OutfitBuilderPage() {
       </div>
 
       {/* RIGHT SIDEBAR */}
-<div className="w-[260px] h-[90vh] mt-6 mr-6 bg-white border rounded-2xl flex flex-col overflow-hidden">        {/* FIXED TOP */}
+      <div className="w-[260px] h-[90vh] mt-6 mr-6 bg-white border rounded-2xl flex flex-col overflow-hidden">
         <div className="p-4 border-b flex flex-col gap-3">
-
           <button
             onClick={handleSave}
             className="bg-[#7CB98B] text-white py-2 rounded-lg font-medium"
@@ -242,7 +291,6 @@ export default function OutfitBuilderPage() {
           </select>
         </div>
 
-        {/* SCROLLABLE ITEMS */}
         <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-4">
           {filteredItems.map((item) => (
             <div
@@ -252,12 +300,12 @@ export default function OutfitBuilderPage() {
             >
               <img
                 src={`http://localhost:5000${item.image_url}`}
+                crossOrigin="anonymous"
                 className="w-full h-28 object-contain"
               />
             </div>
           ))}
         </div>
-
       </div>
     </div>
   );
