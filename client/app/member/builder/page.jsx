@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Trash2, RotateCw } from "lucide-react";
-import html2canvas from "html2canvas"; // ✅ IMPORTANT
+import html2canvas from "html2canvas";
 
 function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
   const handleSelect = (e) => {
@@ -17,17 +17,13 @@ function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
 
     const startX = e.clientX;
     const startY = e.clientY;
-
     const origX = item.x;
     const origY = item.y;
 
     const move = (e) => {
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-
       onChange(item.id, {
-        x: origX + dx,
-        y: origY + dy,
+        x: origX + (e.clientX - startX),
+        y: origY + (e.clientY - startY),
       });
     };
 
@@ -45,17 +41,13 @@ function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
 
     const startX = e.clientX;
     const startY = e.clientY;
-
     const startW = item.width;
     const startH = item.height;
 
     const move = (e) => {
-      const newW = Math.max(80, startW + (e.clientX - startX));
-      const newH = Math.max(80, startH + (e.clientY - startY));
-
       onChange(item.id, {
-        width: newW,
-        height: newH,
+        width: Math.max(80, startW + (e.clientX - startX)),
+        height: Math.max(80, startH + (e.clientY - startY)),
       });
     };
 
@@ -75,10 +67,8 @@ function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
     const startRotation = item.rotation || 0;
 
     const move = (e) => {
-      const diff = e.clientX - startX;
-
       onChange(item.id, {
-        rotation: startRotation + diff,
+        rotation: startRotation + (e.clientX - startX),
       });
     };
 
@@ -141,6 +131,10 @@ function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
   );
 }
 
+// ─── CANVAS DIMENSIONS (single source of truth) ───────────────────────────────
+const CANVAS_W = 800;
+const CANVAS_H = 550;
+
 export default function OutfitBuilderPage() {
   const { user } = useAuth();
 
@@ -189,7 +183,6 @@ export default function OutfitBuilderPage() {
     setSelectedId(null);
   };
 
-  // ✅ FINAL SAVE (IMAGE)
   const handleSave = async () => {
     if (!user?.user_id) {
       alert("Login first");
@@ -201,32 +194,67 @@ export default function OutfitBuilderPage() {
       return;
     }
 
+    // Deselect everything before capture so selection borders don't appear in the image
+    setSelectedId(null);
+
+    // Allow React to flush the deselect render before capturing
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
     try {
       const canvasElement = document.getElementById("outfit-canvas");
 
-     const canvas = await html2canvas(canvasElement, {
-  useCORS: true,
-  allowTaint: true,
-  backgroundColor: null,
+      // ✅ FIX 1: Use devicePixelRatio so the PNG matches physical pixels on
+      //           retina / HiDPI screens. html2canvas internally multiplies its
+      //           internal canvas by this scale factor; we must undo that when
+      //           we later *display* the image (see SavedOutfitsPage).
+      const dpr = window.devicePixelRatio || 1;
 
-  scale: 1, // 🔥 THIS FIXES SIZE
-  width: canvasElement.offsetWidth,
-  height: canvasElement.offsetHeight,
+      // ✅ FIX 2: Read the element's *layout* size (CSS pixels) explicitly.
+      //           Never rely on offsetWidth when the page might be scrolled or
+      //           the element might have a fractional size.
+      const rect = canvasElement.getBoundingClientRect();
 
-  scrollX: 0,
-  scrollY: 0,
-});
+      const canvas = await html2canvas(canvasElement, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",   // ✅ FIX 3: explicit white bg avoids
+                                       //    transparent-PNG colour shifts
+        scale: dpr,                    // ✅ FIX 1 (applied)
+        width: rect.width,             // ✅ FIX 2 (applied)
+        height: rect.height,           // ✅ FIX 2 (applied)
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0,
+        // ✅ FIX 4: windowWidth/windowHeight prevent html2canvas from using the
+        //    full viewport which can cause internal layout recalculation.
+        windowWidth: rect.width,
+        windowHeight: rect.height,
+        logging: false,
+      });
 
-      const image = canvas.toDataURL("image/png");
+      // ✅ FIX 5: Normalise the PNG back to CSS-pixel dimensions so the image
+      //    file itself is 800×550 regardless of DPR.  This is the simplest way
+      //    to guarantee pixel-perfect display on every screen without sending
+      //    extra metadata to the backend.
+      const normalised = document.createElement("canvas");
+      normalised.width = CANVAS_W;
+      normalised.height = CANVAS_H;
+      const ctx = normalised.getContext("2d");
+      ctx.drawImage(canvas, 0, 0, CANVAS_W, CANVAS_H);
+      const image = normalised.toDataURL("image/png");
 
       const res = await fetch("http://localhost:5000/api/outfits/save-image", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: user.user_id,
           image,
+          // ✅ FIX 6: Store explicit dimensions so the viewer can render with
+          //    the correct aspect ratio even if the container size differs.
+          canvas_width: CANVAS_W,
+          canvas_height: CANVAS_H,
         }),
       });
 
@@ -251,9 +279,10 @@ export default function OutfitBuilderPage() {
         <h1 className="text-3xl font-serif mb-6">Outfit Builder</h1>
 
         <div
-          id="outfit-canvas" // ✅ IMPORTANT
+          id="outfit-canvas"
           onClick={() => setSelectedId(null)}
-          className="w-[800px] h-[550px] border-2 border-dashed border-[#d6d6d6] rounded-xl bg-white relative"
+          style={{ width: CANVAS_W, height: CANVAS_H }}   // ✅ FIX 7: explicit
+          className="border-2 border-dashed border-[#d6d6d6] rounded-xl bg-white relative overflow-hidden"
         >
           {canvasItems.map((item) => (
             <CanvasItem
