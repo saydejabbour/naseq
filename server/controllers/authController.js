@@ -29,14 +29,50 @@ export const register = async (req, res) => {
         // DEFAULT ROLE
         const userRole = role || "member";
 
-        // INSERT USER
+        // 🔥 VERIFICATION TOKEN (NEW - ONLY ADDITION)
+        const verificationToken = crypto.randomBytes(32).toString("hex");
+        const verificationExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        // INSERT USER (UPDATED ONLY HERE)
         db.query(
-          "INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)",
-          [full_name, email, hashedPassword, userRole],
-          (err) => {
+          `INSERT INTO users 
+          (full_name, email, password_hash, role, is_verified, verification_token, verification_expires) 
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            full_name,
+            email,
+            hashedPassword,
+            userRole,
+            false,
+            verificationToken,
+            verificationExpires,
+          ],
+          async (err) => {
             if (err) return errorResponse(res, "Failed to register user");
 
-            return successResponse(res, "Account created successfully");
+            // 🔥 SEND VERIFICATION EMAIL
+            const verifyLink = `http://localhost:5000/api/auth/verify/${verificationToken}`;
+
+            try {
+              await sendEmail(
+                email,
+                "Verify Your Account",
+                `
+                <h2>Welcome to Naseq 👗</h2>
+                <p>Please verify your email:</p>
+                <a href="${verifyLink}">Verify Account</a>
+                <p>This link expires in 1 hour.</p>
+                `
+              );
+
+              console.log("✅ VERIFICATION EMAIL SENT TO:", email);
+
+            } catch (emailError) {
+              console.error("❌ EMAIL FAILED:", emailError);
+              // do NOT break signup if email fails
+            }
+
+            return successResponse(res, "Account created. Please verify your email.");
           }
         );
 
@@ -49,6 +85,42 @@ export const register = async (req, res) => {
     console.error(error);
     return errorResponse(res, "Server error");
   }
+};
+
+
+// ================= VERIFY EMAIL (NEW - DOES NOT AFFECT OTHERS) =================
+export const verifyEmail = (req, res) => {
+  const { token } = req.params;
+
+  db.query(
+    `SELECT * FROM users 
+     WHERE verification_token = ? 
+     AND verification_expires > NOW()`,
+    [token],
+    (err, results) => {
+      if (err) return errorResponse(res, "Database error");
+
+      if (results.length === 0) {
+        return errorResponse(res, "Invalid or expired token", 400);
+      }
+
+      db.query(
+        `UPDATE users 
+         SET is_verified = true,
+             verification_token = NULL,
+             verification_expires = NULL
+         WHERE verification_token = ?`,
+        [token],
+        (err) => {
+          if (err) return errorResponse(res, "Verification failed");
+
+          console.log("✅ EMAIL VERIFIED");
+
+          return res.redirect("http://localhost:3000/login");
+        }
+      );
+    }
+  );
 };
 
 
@@ -69,6 +141,11 @@ export const login = (req, res) => {
 
     const user = results[0];
 
+    // 🔥 ONLY ADD THIS CHECK (SAFE)
+    if (!user.is_verified) {
+      return errorResponse(res, "Please verify your email first", 403);
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!isMatch) {
@@ -79,13 +156,13 @@ export const login = (req, res) => {
       user_id: user.user_id,
       full_name: user.full_name,
       email: user.email,
-      role: user.role, // 🔥 VERY IMPORTANT
+      role: user.role,
     });
   });
 };
 
 
-// ================= FORGOT PASSWORD =================
+// ================= FORGOT PASSWORD (UNCHANGED ✅) =================
 export const forgotPassword = (req, res) => {
   const { email } = req.body;
 
@@ -101,12 +178,9 @@ export const forgotPassword = (req, res) => {
     }
 
     try {
-      // 🔐 Generate token
       const token = crypto.randomBytes(32).toString("hex");
+      const expiry = new Date(Date.now() + 15 * 60 * 1000);
 
-      const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 min
-
-      // 💾 Save token
       db.query(
         "UPDATE users SET reset_token=?, reset_token_expiry=? WHERE email=?",
         [token, expiry, email],
@@ -124,7 +198,6 @@ export const forgotPassword = (req, res) => {
               `
               <h2>Password Reset</h2>
               <p>You requested to reset your password.</p>
-              <p>Click the link below:</p>
               <a href="${resetLink}">${resetLink}</a>
               <p>This link will expire in 15 minutes.</p>
               `
