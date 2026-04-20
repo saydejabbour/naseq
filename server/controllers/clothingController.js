@@ -33,13 +33,13 @@ export const addItem = async (req, res) => {
   let cleanPath = null;
 
   try {
-    const { category_id, color, style, season, occasion, user_id } = req.body;
+    const { category_id, subcategory, color, style, season, occasion, user_id } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ message: "Image file is required." });
     }
 
-    if (!category_id || !color || !style || !season || !occasion || !user_id) {
+    if (!category_id || !subcategory || !color || !style || !season || !occasion || !user_id) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
@@ -74,13 +74,13 @@ export const addItem = async (req, res) => {
     // 🔥 SAVE TO DB
     const query = `
       INSERT INTO clothing_items
-      (user_id, category_id, image_url, color, style, season, occasion)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      (user_id, category_id, subcategory, image_url, color, style, season, occasion)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     db.query(
       query,
-      [user_id, category_id, imageUrl, color, style, season, occasion],
+      [user_id, category_id, subcategory, imageUrl, color, style, season, occasion],
       (err, result) => {
         if (err) {
           console.error("DB error:", err);

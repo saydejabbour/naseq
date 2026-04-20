@@ -18,7 +18,7 @@ export default function OutfitDetailsPage() {
 
   useEffect(() => {
     const fetchOutfit = async () => {
-      const res = await apiRequest(`/outfits/${id}`);
+const res = await apiRequest(`/outfits/template/${id}`);
       setOutfit(res.success ? res.data : null);
       setLoading(false);
     };

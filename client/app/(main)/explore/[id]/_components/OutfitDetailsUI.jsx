@@ -59,11 +59,11 @@ export default function OutfitDetailsUI({
 
           <div className="relative rounded-[4px_24px_4px_24px] overflow-hidden bg-white shadow-[0_24px_64px_rgba(40,60,40,0.14)]">
 
-            <img
-              src={outfit.image_url}
-              alt={outfit.title}
-              className="w-full h-[560px] object-cover"
-            />
+           <img
+  src={`${process.env.NEXT_PUBLIC_API_URL}${outfit.image_url}`}
+  alt={outfit.title}
+  className="w-full h-[560px] object-contain bg-white"
+/>
 
             {/* corners */}
             <div className="absolute top-[14px] left-[14px] w-[32px] h-[32px] border-t-2 border-l-2 border-white/70"></div>

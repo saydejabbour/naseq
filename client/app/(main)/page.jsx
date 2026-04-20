@@ -1,9 +1,24 @@
+"use client";
+import { useEffect, useState } from "react";
+import { apiRequest } from "@/services/api";
 import Image from "next/image";
 import { Shirt, Sparkles, LayoutGrid, Users } from "lucide-react";
 import Link from "next/link";
-import { exploreData } from "@/services/explore";
+
 
 export default function HomePage() {
+  const [outfits, setOutfits] = useState([]);
+
+  useEffect(() => {
+    const fetchOutfits = async () => {
+      const res = await apiRequest("/outfits");
+      if (res.success) {
+        setOutfits(res.data);
+      }
+    };
+
+    fetchOutfits();
+  }, []);
   return (
     <>
       {/* 🔹 HERO SECTION */}
@@ -149,102 +164,90 @@ export default function HomePage() {
       </section>
 
       {/* 🔹 FEATURED OUTFITS */}
-      <section className="py-24 px-6 bg-[#FAFAF8]">
-        <div className="max-w-6xl mx-auto mb-14">
-         
-          <div className="flex items-end justify-between">
-            <h2 className="font-playfair text-4xl font-bold text-[#1C2B22] leading-tight">
-              Featured Outfits
-            </h2>
-            <Link
-              href="/explore"
-              className="hidden md:flex items-center gap-2 text-sm text-[#7CB98B] font-medium hover:gap-3 transition-all duration-200 group"
-            >
-              View all
-              <span className="text-lg group-hover:translate-x-1 transition-transform duration-200">
-                →
+         <section className="py-24 px-6 bg-[#FAFAF8]">
+  <div className="max-w-6xl mx-auto mb-14">
+    <div className="flex items-end justify-between">
+      <div>
+        <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[#7CB98B] mb-2">
+          Curated Styles
+        </p>
+        <h2 className="font-playfair text-4xl font-bold text-[#1C2B22] leading-tight">
+          Featured Outfits
+        </h2>
+      </div>
+      <Link
+        href="/explore"
+        className="hidden md:inline-flex items-center gap-2 text-sm font-medium text-[#1C2B22] border border-[#D4E6D9] bg-white px-4 py-2 rounded-full hover:bg-[#EEF5EF] hover:border-[#7CB98B] transition-all duration-200"
+      >
+        View all <span className="text-[#7CB98B]">→</span>
+      </Link>
+    </div>
+  </div>
+
+  <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+    {outfits.slice(0, 3).map((outfit, i) => (
+      <div
+        key={outfit.id}
+        className="group relative bg-white rounded-2xl overflow-hidden border border-[#E8F0EA] hover:border-[#B6D9C0] hover:shadow-[0_8px_32px_rgba(28,43,34,0.08)] transition-all duration-300"
+      >
+        {/* Image Block */}
+       <div className="relative w-full h-[480px] bg-[#fdfcfa] overflow-hidden">
+  <img
+    src={`${process.env.NEXT_PUBLIC_API_URL}${outfit.image_url}`}
+    alt={outfit.title}
+    className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+  />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+
+          {/* Index badge */}
+          <div className="absolute top-4 left-4 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-[11px] font-bold text-[#2F3E34] shadow-sm">
+            {String(i + 1).padStart(2, "0")}
+          </div>
+
+          {/* Tags float on image bottom */}
+          <div className="absolute bottom-4 left-4 flex gap-2 flex-wrap">
+            {[outfit.style, outfit.season].map((tag, index) => (
+              <span
+                key={index}
+                className="text-[10px] font-semibold bg-white/90 backdrop-blur-sm text-[#2F6B40] px-3 py-1 rounded-full tracking-wide shadow-sm"
+              >
+                {tag}
               </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Card Body */}
+        <div className="px-5 pt-4 pb-5">
+          <h3 className="font-playfair text-[1.2rem] font-bold text-[#1C2B22] leading-snug mb-1">
+            {outfit.title}
+          </h3>
+
+          <p className="text-[13px] text-[#7CB98B] font-medium">
+            {outfit.stylist}
+          </p>
+
+          {/* Divider */}
+          <div className="my-4 border-t border-[#EEF0EC]" />
+
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-[#A8B8AB] tracking-wide uppercase">
+              Styled Look
+            </span>
+
+            <Link
+              href={`/explore/${outfit.id}`}
+              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#2F6B40] bg-[#EEF5EF] hover:bg-[#DFF0E4] px-4 py-1.5 rounded-full transition-colors duration-200"
+            >
+              Explore <span>→</span>
             </Link>
           </div>
-          <div className="mt-4 h-px bg-gradient-to-r from-[#2F3E34]/20 to-transparent" />
         </div>
-
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {exploreData.slice(0, 3).map((outfit, i) => (
-            <div
-              key={outfit.id}
-              className="outfit-card group relative bg-white rounded-3xl overflow-hidden cursor-pointer"
-            >
-              {/* Index badge */}
-              <div className="absolute top-4 left-4 z-10 w-7 h-7 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center text-[10px] font-bold text-[#2F3E34] shadow-sm">
-                {String(i + 1).padStart(2, "0")}
-              </div>
-
-              {/* Image */}
-              <div className="relative w-full h-[360px] bg-[#F4F3EF] overflow-hidden">
-                <Image
-                  src={outfit.image}
-                  alt={outfit.title}
-                  fill
-                  className="object-contain scale-[1.05] group-hover:scale-[1.12] transition-transform duration-500 ease-out"
-                />
-                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white/60 to-transparent pointer-events-none" />
-              </div>
-
-              {/* Content */}
-              <div className="px-5 pt-4 pb-6">
-                <div className="flex gap-2 flex-wrap mb-3">
-                  {outfit.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="text-[11px] font-medium bg-[#EEF5EF] text-[#3A7D52] px-3 py-1 rounded-full tracking-wide"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <h3 className="font-playfair text-xl font-bold text-[#1C2B22] leading-snug mb-1">
-                  {outfit.title}
-                </h3>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#7CB98B]" />
-                  <p className="text-sm text-[#7CB98B] font-medium">
-                    {outfit.stylist}
-                  </p>
-                </div>
-                <div className="mt-5 pt-4 border-t border-[#F0EDE8] flex items-center justify-between">
-                  <span className="text-xs text-[#9BA89E] tracking-wide uppercase">
-                    Styled Look
-                  </span>
-
-
-                <Link
-    href={`/explore/${outfit.id}`}
-    className="text-xs font-semibold text-[#2F3E34] flex items-center gap-1.5 hover:gap-2.5 transition-all duration-200 group/btn"
-  >
-    Explore
-    <span className="w-5 h-5 rounded-full bg-[#2F3E34] text-white flex items-center justify-center text-[10px] group-hover/btn:bg-[#7CB98B] transition-colors duration-200">
-      →
-    </span>
-
-  </Link>
-              
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Mobile view all */}
-        <div className="md:hidden text-center mt-10">
-          <Link
-            href="/explore"
-            className="inline-flex items-center gap-2 text-sm text-[#7CB98B] font-medium"
-          >
-            View all outfits →
-          </Link>
-        </div>
-      </section>
+      </div>
+    ))}
+  </div>
+</section>
 
       {/* 🔹 CTA SECTION */}
       <section className="py-20 px-6 flex justify-center">

@@ -7,20 +7,83 @@ import { useAuth } from "@/context/AuthContext";
 const CATEGORIES = [
   { id: 1, name: "Tops" },
   { id: 2, name: "Bottoms" },
-  { id: 3, name: "Shoes" },
-  { id: 4, name: "Accessories" },
-  { id: 5, name: "Dress" },
+  { id: 3, name: "Dresses & Jumpsuits" },
+  { id: 4, name: "Outerwear" },
+  { id: 5, name: "Shoes" },
+  { id: 6, name: "Accessories" },
+  { id: 7, name: "Bags" },
+  { id: 8, name: "Activewear" },
 ];
+
+const SUBCATEGORIES = {
+  "Tops": [
+    "T-Shirt", "Polo Shirt", "Button-Down Shirt", "Blouse",
+    "Tank Top", "Crop Top", "Bodysuit", "Sweater",
+    "Turtleneck", "Cardigan", "Hoodie", "Sweatshirt",
+  ],
+  "Bottoms": [
+    "Jeans", "Trousers", "Dress Pants", "Chinos",
+    "Shorts", "Leggings", "Joggers", "Sweatpants",
+    "Mini Skirt", "Midi Skirt", "Maxi Skirt", "Denim Skirt",
+  ],
+  "Dresses & Jumpsuits": [
+    "Mini Dress", "Midi Dress", "Maxi Dress", "Wrap Dress",
+    "Shirt Dress", "Bodycon Dress", "Slip Dress",
+    "Sundress", "Evening Gown", "Jumpsuit", "Romper",
+  ],
+  "Outerwear": [
+    "Trench Coat", "Wool Coat", "Puffer Jacket", "Leather Jacket",
+    "Denim Jacket", "Bomber Jacket", "Blazer",
+    "Windbreaker", "Parka", "Peacoat",
+  ],
+  "Shoes": [
+    "Sneakers", "Loafers", "Oxford Shoes", "Chelsea Boots",
+    "Ankle Boots", "Knee-High Boots", "Heels", "Block Heels",
+    "Sandals", "Slides", "Ballet Flats", "Mules",
+  ],
+  "Accessories": [
+    "Belt", "Sunglasses", "Watch", "Scarf",
+    "Baseball Cap", "Beanie", "Wide-Brim Hat",
+    "Gloves", "Hair Clip", "Headband",
+  ],
+  "Bags": [
+    "Tote Bag", "Backpack", "Shoulder Bag", "Crossbody Bag",
+    "Clutch", "Mini Bag", "Bucket Bag", "Fanny Pack",
+  ],
+  "Activewear": [
+    "Sports Bra", "Athletic Shorts", "Compression Leggings",
+    "Track Jacket", "Track Pants", "Cycling Shorts",
+    "Tennis Skirt", "Rashguard",
+  ],
+};
 
 const COLORS = [
-  "Black", "White", "Beige", "Brown", "Gray",
-  "Navy", "Blue", "Green", "Red", "Pink",
-  "Yellow", "Orange", "Purple", "Multicolor",
+  "Black", "White", "Ivory", "Beige", "Camel",
+  "Light Gray", "Charcoal", "Brown",
+  "Light Blue", "Navy", "Royal Blue",
+  "Olive", "Forest Green", "Sage",
+  "Red", "Burgundy", "Pink", "Blush",
+  "Orange", "Yellow", "Mustard",
+  "Purple", "Lavender",
+  "Multicolor", "Patterned",
 ];
 
-const STYLES = ["Casual", "Formal", "Sporty", "Elegant", "Streetwear", "Bohemian"];
-const SEASONS = ["Summer", "Winter", "Spring", "Fall", "All Season"];
-const OCCASIONS = ["Daily", "Work", "Event", "Sport", "Travel", "Evening"];
+const STYLES = [
+  "Casual", "Smart Casual", "Business Casual", "Formal",
+  "Streetwear", "Sporty", "Elegant", "Chic",
+  "Bohemian", "Minimalist",
+];
+
+const SEASONS = [
+  "Spring", "Summer", "Autumn", "Winter",
+  "Spring / Autumn", "All Season",
+];
+
+const OCCASIONS = [
+  "Everyday", "Work / Office", "Formal Event",
+  "Date Night", "Night Out", "Sport / Gym",
+  "Travel", "Beach / Vacation",
+];
 
 export default function AddItemPage() {
   const router = useRouter();
@@ -29,8 +92,10 @@ export default function AddItemPage() {
 
   const [preview, setPreview] = useState(null);
   const [file, setFile] = useState(null);
+  const [subcategory, setSubcategory] = useState("");
   const [form, setForm] = useState({
     category_id: "",
+    subcategory: "",
     color: "",
     style: "",
     season: "",
@@ -57,13 +122,16 @@ export default function AddItemPage() {
   };
 
   // ── form handling ───────────────────────────────────────
-  const handleChange = (field, value) =>
+  const handleChange = (field, value) => {
+    if (field === "category_id") setSubcategory("");
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleSubmit = async () => {
     setError("");
     if (!file) return setError("Please upload an image.");
     if (!form.category_id) return setError("Please select a category.");
+    if (!subcategory) return setError("Please select a subcategory.");
     if (!form.color) return setError("Please select a color.");
     if (!form.style) return setError("Please select a style.");
     if (!form.season) return setError("Please select a season.");
@@ -74,6 +142,7 @@ export default function AddItemPage() {
     const data = new FormData();
     data.append("image", file);
     data.append("category_id", form.category_id);
+    data.append("subcategory", subcategory);
     data.append("color", form.color);
     data.append("style", form.style);
     data.append("season", form.season);
@@ -98,6 +167,14 @@ export default function AddItemPage() {
       setLoading(false);
     }
   };
+
+  // ── derived subcategory options ─────────────────────────
+  const selectedCategoryName = CATEGORIES.find(
+    (c) => String(c.id) === String(form.category_id)
+  )?.name;
+  const subcategoryOptions = selectedCategoryName
+    ? SUBCATEGORIES[selectedCategoryName] || []
+    : [];
 
   // ── UI ──────────────────────────────────────────────────
   return (
@@ -167,6 +244,17 @@ export default function AddItemPage() {
             options={CATEGORIES.map((c) => ({ label: c.name, value: c.id }))}
             placeholder="Select Category"
           />
+
+          {form.category_id && (
+            <SelectField
+              label="Subcategory"
+              value={subcategory}
+              onChange={(v) => setSubcategory(v)}
+              options={subcategoryOptions.map((s) => ({ label: s, value: s }))}
+              placeholder="Select Subcategory"
+            />
+          )}
+
           <SelectField
             label="Color"
             value={form.color}
