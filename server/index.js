@@ -9,6 +9,7 @@ import clothingRoutes from "./routes/clothingRoutes.js";
 import outfitRoutes from "./routes/outfitsRoutes.js";
 import contactRoutes from "./routes/contact.js";
 import stylistRoutes from "./routes/stylistRoutes.js";
+import savedTemplatesRoutes from "./routes/savedTemplatesRoutes.js";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use("/api/clothing", clothingRoutes);
 app.use("/api/outfits", outfitRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/stylist", stylistRoutes);
+app.use("/api/saved-templates", savedTemplatesRoutes);
 
 // 🔥 SERVER START
 const PORT = process.env.PORT || 5000;

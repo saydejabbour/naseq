@@ -16,28 +16,92 @@ export default function OutfitDetailsPage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // 🔥 FETCH OUTFIT
   useEffect(() => {
     const fetchOutfit = async () => {
-const res = await apiRequest(`/outfits/template/${id}`);
-      setOutfit(res.success ? res.data : null);
-      setLoading(false);
+      try {
+        const res = await apiRequest(`/outfits/template/${id}`);
+
+        if (res.success) {
+          setOutfit(res.data);
+        } else {
+          setOutfit(null);
+        }
+
+      } catch (err) {
+        console.error(err);
+        setOutfit(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     if (id) fetchOutfit();
   }, [id]);
 
-  const handleSave = async () => {
-    if (!user) {
-      router.push("/signup");
-      return;
+  // 🔥 SAVE FUNCTION
+ const handleSave = async () => {
+  if (!user) {
+    router.push("/signup");
+    return;
+  }
+
+  if (!outfit) return;
+
+  setSaving(true);
+
+  try {
+    if (saved) {
+      // 🔴 REMOVE
+      await fetch(
+        `http://localhost:5000/api/saved-templates/${user.user_id}/${outfit.id}`,
+        { method: "DELETE" }
+      );
+
+      setSaved(false);
+
+    } else {
+      // 🟢 SAVE
+      const res = await saveTemplate(user.user_id, outfit.id);
+
+      if (res.success || res.message === "Already saved") {
+        setSaved(true);
+      }
     }
 
-    setSaving(true);
-    const res = await saveTemplate(user.user_id, outfit.id);
+  } catch (err) {
+    console.error(err);
+  } finally {
     setSaving(false);
+  }
+};
 
-    if (res.success) setSaved(true);
+useEffect(() => {
+  const checkIfSaved = async () => {
+    if (!user || !outfit) return;
+
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/saved-templates/${user.user_id}`
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        const exists = data.data.some(
+          (item) => item.template_id === outfit.id
+        );
+
+        if (exists) setSaved(true);
+      }
+
+    } catch (err) {
+      console.error(err);
+    }
   };
+
+  checkIfSaved();
+}, [user, outfit]);
 
   return (
     <OutfitDetailsUI

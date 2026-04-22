@@ -7,10 +7,10 @@ import { useAuth } from "@/context/AuthContext";
 const CATEGORIES = [
   { id: 1, name: "Tops" },
   { id: 2, name: "Bottoms" },
-  { id: 3, name: "Dresses & Jumpsuits" },
-  { id: 4, name: "Outerwear" },
-  { id: 5, name: "Shoes" },
-  { id: 6, name: "Accessories" },
+  { id: 3, name: "Shoes" },
+  { id: 4, name: "Accessories" },
+  { id: 5, name: "Dresses & Jumpsuits" },
+  { id: 6, name: "Outerwear" },
   { id: 7, name: "Bags" },
   { id: 8, name: "Activewear" },
 ];

@@ -88,7 +88,7 @@ export default function Navbar() {
               onClick={() => {
                 if (!user) return;
 
-                if (user.role === "member") window.location.href = "/dashboard";
+                if (user.role === "member") window.location.href = "/member";
                 else if (user.role === "stylist") window.location.href = "/stylist";
                 else if (user.role === "admin") window.location.href = "/admin";
               }}

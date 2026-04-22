@@ -28,7 +28,7 @@ export default function Sidebar({ role }) {
       { label: "Add Item", href: "/member/item", icon: PlusCircle },
       { label: "Outfit Builder", href: "/member/builder", icon: LayoutGrid },
       { label: "Saved Outfits", href: "/member/saved-outfits", icon: Heart },
-      { label: "Saved Templates", href: "/member/templates", icon: Bookmark },
+      { label: "Saved Templates", href: "/member/template", icon: Bookmark },
       { label: "Generate Outfit", href: "/member/generate", icon: Sparkles },
     ],
 

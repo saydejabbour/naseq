@@ -48,7 +48,7 @@ export default function SaveButton({
   return (
     <button
       onClick={onSave}
-      disabled={saving || saved}
+      disabled={saving}
       className={`
         flex items-center gap-2
          px-6 py-2.5
@@ -69,7 +69,7 @@ export default function SaveButton({
         <span>Saving…</span>
       ) : saved ? (
         <>
-          <span>Saved to Wardrobe</span>
+          <span>Remove from Saved</span>
 
           <svg
             width="18"

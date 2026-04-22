@@ -17,6 +17,7 @@ export default function Card({ outfit }) {
   className="w-full h-full object-contain"
 />
 
+
           {outfit.occasion && (
             <span className="absolute top-3 right-3 bg-white/90 border border-green-100 text-green-700 text-xs px-3 py-1 rounded-full">
               {outfit.occasion}
