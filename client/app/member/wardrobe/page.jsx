@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 /* ✅ SAME OPTIONS */
@@ -20,10 +21,13 @@ const COLORS = [
 const STYLES = ["Casual", "Formal", "Sporty", "Elegant", "Streetwear", "Bohemian"];
 const SEASONS = ["Summer", "Winter", "Spring", "Fall", "All Season"];
 
+
 export default function WardrobePage() {
   const { user } = useAuth();
 
   const [items, setItems] = useState([]);
+
+  const router = useRouter();
 
   const [filters, setFilters] = useState({
     category: "",
@@ -145,9 +149,12 @@ export default function WardrobePage() {
             </div>
 
             {/* BUTTON */}
-            <button className="mt-4 w-full bg-[#F5E6D3] rounded-xl py-2 text-sm font-medium hover:bg-[#ead7bf] transition">
-              Generate Outfit
-            </button>
+            <button
+  onClick={() => router.push(`/member/generate?item_id=${item.item_id}`)}
+  className="mt-4 w-full bg-[#F5E6D3] rounded-xl py-2 text-sm font-medium hover:bg-[#ead7bf] transition"
+>
+  Generate Outfit
+</button>
           </div>
         ))}
 

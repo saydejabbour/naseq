@@ -1,7 +1,8 @@
 import express from "express";
 import db from "../config/db.js";
 import { successResponse, errorResponse } from "../utils/response.js";
-import { saveOutfitImage } from "../controllers/outfitController.js";
+import { saveOutfitImage, generateOutfits } from "../controllers/outfitController.js";
+
 
 const router = express.Router();
 
@@ -64,6 +65,7 @@ router.get("/user/:user_id", (req, res) => {
   });
 });
 
+router.post("/generate", generateOutfits);
 
 // =========================
 // ✅ 4. TEMPLATE DETAILS
