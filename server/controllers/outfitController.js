@@ -28,25 +28,16 @@ export const createOutfit = (req, res) => {
 
       console.log("BACKEND RECEIVED:", items);
 
-      // ✅ SAFE INSERT (loop)
+      // ✅ FIXED QUERY (NO x, y, width, height)
       const insertItemsQuery = `
-        INSERT INTO member_outfit_items 
-        (outfit_id, item_id, x, y, width, height, rotation)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO member_outfit_items (outfit_id, item_id)
+        VALUES (?, ?)
       `;
 
       items.forEach((item) => {
         db.query(
           insertItemsQuery,
-          [
-            outfit_id,
-            item.item_id,
-            item.x,
-            item.y,
-            item.width,
-            item.height,
-            item.rotation,
-          ],
+          [outfit_id, item.item_id],
           (err2) => {
             if (err2) {
               console.error("❌ Insert item error:", err2);

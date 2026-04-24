@@ -1,7 +1,7 @@
 import express from "express";
 import db from "../config/db.js";
 import { successResponse, errorResponse } from "../utils/response.js";
-import { saveOutfitImage, generateOutfits } from "../controllers/outfitController.js";
+import { createOutfit, saveOutfitImage, generateOutfits } from "../controllers/outfitController.js";
 
 
 const router = express.Router();
@@ -121,6 +121,11 @@ router.delete("/:outfit_id", (req, res) => {
     return successResponse(res, "Outfit deleted");
   });
 });
+
+// =========================
+// ✅ 6. CREATE OUTFIT (STRUCTURED SAVE)
+// =========================
+router.post("/", createOutfit);
 
 
 export default router;

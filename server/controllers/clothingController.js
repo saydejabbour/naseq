@@ -60,7 +60,9 @@ export const addItem = async (req, res) => {
         },
         responseType: "arraybuffer",
       }
+      
     );
+    console.log("KEY:", process.env.REMOVE_BG_API_KEY);
 
     // save clean image
     cleanPath = path.join(UPLOAD_DIR, `clean-${Date.now()}.png`);

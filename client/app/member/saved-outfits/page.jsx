@@ -113,10 +113,14 @@ export default function SavedOutfitsPage() {
             {/* ✅ FIX 8 in modal too */}
             <div style={{ aspectRatio }} className="w-full overflow-hidden rounded-xl">
               <img
-                src={`http://localhost:5000${selectedOutfit.image_url}`}
-                alt={selectedOutfit.name}
-                className="w-full h-full object-fill"
-              />
+  src={
+    selectedOutfit?.image_url
+      ? `http://localhost:5000${selectedOutfit.image_url}`
+      : "/placeholder.png"
+  }
+  alt={selectedOutfit?.name || "Outfit"}
+  className="w-full h-full object-contain"
+/>
             </div>
 
             <h2 className="mt-4 text-xl font-serif text-[#2F3E34]">
