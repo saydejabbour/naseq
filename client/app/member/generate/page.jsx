@@ -264,7 +264,7 @@ function LoadingOverlay() {
   }, []);
 
   return (
-  <motion.div
+<motion.div
   key="loader"
   initial={{ opacity: 0 }}
   animate={{ opacity: 1 }}
@@ -278,51 +278,64 @@ function LoadingOverlay() {
   }}
 >
 
-  {/* Step label */}
- <div style={{ textAlign: "center", minHeight: "44px" }}>
-  <motion.p
-    key={step}
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -8 }}
-    transition={{ duration: 0.3 }}
-    style={{
-      fontSize: "14px",
-      color: P.textDark,
-      fontFamily: "sans-serif",
-      letterSpacing: "0.3px"
-    }}
-  >
-    {LOADING_STEPS[step]}
-    <span style={{ color: P.orange }}>
-      {".".repeat(dots)}
-    </span>
-  </motion.p>
+  {/* Step label + dots */}
+  <div style={{ textAlign: "center" }}>
+    <AnimatePresence mode="wait">
+      <motion.p
+        key={step}
+        initial={{ opacity: 0, y: 8, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.3 }}
+        style={{
+          margin: 0,
+          fontSize: "14px",
+          color: P.textMid,
+          fontFamily: "sans-serif",
+          letterSpacing: "0.3px"
+        }}
+      >
+        {LOADING_STEPS[step]}
+        <span
+          style={{
+            color: P.orange,
+            letterSpacing: "2px"
+          }}
+        >
+          {".".repeat(dots)}
+        </span>
+      </motion.p>
+    </AnimatePresence>
 
-  {/* subtle underline animation */}
-  <div
-    style={{
-      marginTop: "10px",
-      height: "2px",
-      width: "60px",
-      background: P.orangeLight,
-      borderRadius: "2px",
-      overflow: "hidden",
-      marginLeft: "auto",
-      marginRight: "auto"
-    }}
-  >
-    <motion.div
-      animate={{ x: ["-100%", "100%"] }}
-      transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+    {/* Underline shimmer */}
+    <div
       style={{
-        width: "40%",
-        height: "100%",
-        background: P.orange
+        marginTop: "10px",
+        height: "2px",
+        width: "60px",
+        background: P.orangeLight,
+        borderRadius: "2px",
+        overflow: "hidden",
+        marginLeft: "auto",
+        marginRight: "auto"
       }}
-    />
+    >
+      <motion.div
+        animate={{ x: ["-100%", "100%"] }}
+        transition={{
+          repeat: Infinity,
+          duration: 1.6,
+          ease: "easeInOut"
+        }}
+        style={{
+          width: "40%",
+          height: "100%",
+          background: P.orange
+        }}
+      />
+    </div>
   </div>
-</div>
+
 </motion.div>
   );
 }

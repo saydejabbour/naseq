@@ -50,8 +50,7 @@ export default function SavedOutfitsPage() {
   //    canvas aspect ratio (800×550 = ~1.454). Using a ratio-locked wrapper +
   //    object-fill (not object-contain) means the image fills exactly without
   //    letter-boxing that can make items look mis-positioned.
-  const aspectRatio = `${CANVAS_W} / ${CANVAS_H}`;
-
+const aspectRatio = `800 / 700`;
   return (
     <div className="px-10 py-8 bg-[#FDF8F3] min-h-screen">
       <h1 className="text-3xl font-serif text-[#2F3E34] mb-8">Saved Outfits</h1>
