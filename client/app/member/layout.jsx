@@ -2,6 +2,7 @@
 
 import Sidebar from "@/components/sidebar/Sidebar";
 import { useAuth } from "@/context/AuthContext";
+import { ToastProvider } from "@/context/ToastContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -35,14 +36,16 @@ export default function MemberLayout({ children }) {
   // ✅ YOUR ORIGINAL UI
   return (
     <div className="flex min-h-screen">
-
+ 
       {/* 🧭 Sidebar */}
       <Sidebar role="member" />
 
       {/* 📄 Content */}
+      <ToastProvider>
       <main className="flex-1 p-10">
         {children}
       </main>
+      </ToastProvider>
 
     </div>
   );

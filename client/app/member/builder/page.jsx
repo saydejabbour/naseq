@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Trash2, RotateCw } from "lucide-react";
 import html2canvas from "html2canvas";
+import { useToast } from "@/context/ToastContext";
 
 function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
   const handleSelect = (e) => {
@@ -138,6 +139,8 @@ const CANVAS_H = 550;
 export default function OutfitBuilderPage() {
   const { user } = useAuth();
 
+  const { showToast } = useToast();
+
   const [items, setItems] = useState([]);
   const [canvasItems, setCanvasItems] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -184,15 +187,15 @@ export default function OutfitBuilderPage() {
   };
 
   const handleSave = async () => {
-    if (!user?.user_id) {
-      alert("Login first");
-      return;
-    }
+   if (!user?.user_id) {
+  showToast("Login first", "error");
+  return;
+}
 
-    if (canvasItems.length === 0) {
-      alert("Add items first");
-      return;
-    }
+if (canvasItems.length === 0) {
+  showToast("Add items first", "error");
+  return;
+}
 
     // Deselect everything before capture so selection borders don't appear in the image
     setSelectedId(null);
@@ -260,12 +263,12 @@ export default function OutfitBuilderPage() {
 
       const data = await res.json();
 
-      if (data.success) {
-        alert("Outfit saved ✅");
-        setCanvasItems([]);
-      } else {
-        alert(data.message);
-      }
+     if (data.success) {
+  showToast("Outfit saved");
+  setCanvasItems([]);
+} else {
+  showToast(data.message, "error");
+}
     } catch (err) {
       console.error(err);
       alert("Error saving outfit");

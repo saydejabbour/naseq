@@ -5,8 +5,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
+
         <AuthProvider>
-          {children}
+         
+            {children}
+          
         </AuthProvider>
       </body>
     </html>

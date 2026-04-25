@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/context/ToastContext";
+
 import { useRouter } from "next/navigation";
 
 
@@ -88,6 +90,54 @@ function InjectStyles() {
   }, []);
   return null;
 }
+
+// Staggered dot pulse via CSS — each dot fades in/out at a different delay
+function AnimatedDots({ color }) {
+  return (
+    <>
+      <style>{`
+        @keyframes dot-pulse {
+          0%, 80%, 100% { opacity: 0.2; }
+          40%            { opacity: 1;   }
+        }
+        .loading-dot {
+          display: inline-block;
+          animation: dot-pulse 1.4s ease-in-out infinite;
+        }
+        .loading-dot:nth-child(1) { animation-delay: 0s;    }
+        .loading-dot:nth-child(2) { animation-delay: 0.2s;  }
+        .loading-dot:nth-child(3) { animation-delay: 0.4s;  }
+      `}</style>
+      <span style={{ color, letterSpacing: "2px", marginLeft: "1px" }} aria-hidden="true">
+        <span className="loading-dot">.</span>
+        <span className="loading-dot">.</span>
+        <span className="loading-dot">.</span>
+      </span>
+    </>
+  );
+}
+ 
+const textStyle = {
+  margin: 0,
+  fontSize: "14px",
+  fontFamily: "sans-serif",
+  letterSpacing: "0.3px",
+  display: "flex",
+  alignItems: "baseline",
+  whiteSpace: "nowrap",
+};
+ 
+const variants = {
+  enter: { opacity: 0, y: 8,  scale: 0.98 },
+  center: { opacity: 1, y: 0,  scale: 1    },
+  exit:   { opacity: 0, y: -8, scale: 0.98 },
+};
+ 
+// Drop-in replacement for the original JSX block.
+// Props mirror what the original code had in scope:
+//   step         — current step index (used as AnimatePresence key)
+//   LOADING_STEPS — string array of step labels
+//   P            — palette object with { textMid, orange }
 
 // ─────────────────────────────────────────────
 // 🖼️ CANVAS OUTFIT CAPTURE
@@ -283,30 +333,18 @@ function LoadingOverlay() {
     <AnimatePresence mode="wait">
       <motion.p
         key={step}
-        initial={{ opacity: 0, y: 8, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.3 }}
-        style={{
-          margin: 0,
-          fontSize: "14px",
-          color: P.textMid,
-          fontFamily: "sans-serif",
-          letterSpacing: "0.3px"
-        }}
+        variants={variants}
+        initial="enter"
+        animate="center"
+        exit="exit"
+        layout
+        transition={{ duration: 0.25, ease: "easeInOut" }}
+        style={{ ...textStyle, color: P.textMid }}
       >
         {LOADING_STEPS[step]}
-        <span
-          style={{
-            color: P.orange,
-            letterSpacing: "2px"
-          }}
-        >
-          {".".repeat(dots)}
-        </span>
+        <AnimatedDots color={P.orange} />
       </motion.p>
     </AnimatePresence>
-
     {/* Underline shimmer */}
     <div
       style={{
@@ -344,6 +382,7 @@ function LoadingOverlay() {
 // 🃏 OUTFIT CARD — Tailor's Reveal
 // ─────────────────────────────────────────────
 function OutfitCard({ outfit, getImage, index, user }) {
+    const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const accent = STYLE_ACCENTS[outfit.style] ?? STYLE_ACCENTS.Casual;
 
@@ -375,15 +414,16 @@ function OutfitCard({ outfit, getImage, index, user }) {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        alert(data.message || "Save failed");
-        return;
-      }
+     if (!res.ok) {
+  showToast(data.message, "error");
+  return;
+}
+showToast("Outfit saved ");
 
-      alert("Outfit saved ✅");
     } catch (err) {
-      console.error("Save error:", err);
-      alert("Error saving outfit");
+  console.error(err);
+  showToast("Error generating outfits", "error");
+
     } finally {
       setSaving(false);
     }
@@ -540,6 +580,7 @@ function StylePill({ style, selected, onClick, disabled }) {
 // ─────────────────────────────────────────────
 export default function GeneratePage() {
   const { user }       = useAuth();
+  const { showToast } = useToast();
   const searchParams   = useSearchParams();
   const itemId         = searchParams.get("item_id");
   const router = useRouter();
@@ -582,12 +623,16 @@ export default function GeneratePage() {
       });
       console.log("end");
       const data = await res.json();
-      if (!res.ok) { alert(data.message); return; }
+     if (!res.ok) {
+  showToast(data.message, "error");
+  return;
+}
+
       setOutfits(data.data);
       setHasGenerated(true);
     } catch (err) {
       console.error(err);
-      alert("Error generating outfits");
+     showToast("Error generating outfits", "error");
     } finally {
       setLoading(false);
     }
