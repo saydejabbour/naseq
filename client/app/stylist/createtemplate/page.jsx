@@ -100,7 +100,7 @@ export default function CreateTemplatePage() {
   /* ── Fetch user's clothing items ── */
   useEffect(() => {
     if (!user?.user_id) return;
-    fetch(`http://localhost:5000/api/clothing/user/${user.user_id}`)
+    fetch(`http://127.0.0.1:5000/api/clothing/user/${user.user_id}`)
       .then((r) => r.json())
       .then((d) => {
         console.log("Clothing API response:", d);

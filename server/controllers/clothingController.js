@@ -8,11 +8,11 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// ── ensure uploads folder exists ─────────────────────────
+/* ================= FOLDER ================= */
 const UPLOAD_DIR = "uploads";
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
 
-// ── multer config ────────────────────────────────────────
+/* ================= MULTER ================= */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => cb(null, `orig-${Date.now()}.png`),
@@ -23,57 +23,77 @@ export const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Only image files are allowed"), false);
+    else cb(new Error("Only image files allowed"), false);
   },
 });
 
-// ── ADD ITEM ─────────────────────────────────────────────
+/* ================= ADD ITEM (FIXED) ================= */
 export const addItem = async (req, res) => {
   let originalPath = null;
   let cleanPath = null;
 
   try {
-    const { category_id, subcategory, color, style, season, occasion, user_id } = req.body;
+    const {
+      category_id,
+      subcategory,
+      color,
+      style,
+      season,
+      occasion,
+      user_id,
+    } = req.body;
 
     if (!req.file) {
-      return res.status(400).json({ message: "Image file is required." });
+      return res.status(400).json({
+        success: false,
+        message: "Image is required",
+      });
     }
 
-    if (!category_id || !subcategory || !color || !style || !season || !occasion || !user_id) {
-      return res.status(400).json({ message: "All fields are required." });
+    // ✅ ONLY REQUIRED FIELDS
+    if (!category_id || !user_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
     }
 
     originalPath = req.file.path;
 
-    // 🔥 REMOVE BACKGROUND
-    const formData = new FormData();
-    formData.append("image_file", fs.createReadStream(originalPath));
-    formData.append("size", "auto");
+    /* ================= REMOVE BG (SAFE) ================= */
+    let imageUrl = "";
 
-    const bgResponse = await axios.post(
-      "https://api.remove.bg/v1.0/removebg",
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-          "X-Api-Key": process.env.REMOVE_BG_API_KEY,
-        },
-        responseType: "arraybuffer",
-      }
-      
-    );
-    console.log("KEY:", process.env.REMOVE_BG_API_KEY);
+    try {
+      const formData = new FormData();
+      formData.append("image_file", fs.createReadStream(originalPath));
+      formData.append("size", "auto");
 
-    // save clean image
-    cleanPath = path.join(UPLOAD_DIR, `clean-${Date.now()}.png`);
-    fs.writeFileSync(cleanPath, bgResponse.data);
+      const bgResponse = await axios.post(
+        "https://api.remove.bg/v1.0/removebg",
+        formData,
+        {
+          headers: {
+            ...formData.getHeaders(),
+            "X-Api-Key": process.env.REMOVE_BG_API_KEY,
+          },
+          responseType: "arraybuffer",
+        }
+      );
 
-    // delete original
-    fs.unlinkSync(originalPath);
+      cleanPath = path.join(UPLOAD_DIR, `clean-${Date.now()}.png`);
+      fs.writeFileSync(cleanPath, bgResponse.data);
 
-    const imageUrl = "/" + cleanPath.replace(/\\/g, "/");
+      fs.unlinkSync(originalPath);
 
-    // 🔥 SAVE TO DB
+      imageUrl = "/" + cleanPath.replace(/\\/g, "/");
+
+    } catch (bgError) {
+      console.warn("⚠️ remove.bg failed, using original image");
+
+      imageUrl = "/" + originalPath.replace(/\\/g, "/");
+    }
+
+    /* ================= SAVE DB ================= */
     const query = `
       INSERT INTO clothing_items
       (user_id, category_id, subcategory, image_url, color, style, season, occasion)
@@ -82,11 +102,23 @@ export const addItem = async (req, res) => {
 
     db.query(
       query,
-      [user_id, category_id, subcategory, imageUrl, color, style, season, occasion],
+      [
+        user_id,
+        category_id,
+        subcategory || null,
+        imageUrl,
+        color || null,
+        style || null,
+        season || null,
+        occasion || null,
+      ],
       (err, result) => {
         if (err) {
-          console.error("DB error:", err);
-          return res.status(500).json({ message: "Database error." });
+          console.error("DB ERROR:", err);
+          return res.status(500).json({
+            success: false,
+            message: "Database error",
+          });
         }
 
         return res.json({
@@ -97,24 +129,21 @@ export const addItem = async (req, res) => {
         });
       }
     );
-  } catch (err) {
-    console.error("addItem error:", err);
 
-    // 🔥 CLEAN FILES IF ERROR
+  } catch (err) {
+    console.error("ADD ITEM ERROR:", err);
+
     if (originalPath && fs.existsSync(originalPath)) fs.unlinkSync(originalPath);
     if (cleanPath && fs.existsSync(cleanPath)) fs.unlinkSync(cleanPath);
 
-    if (err.response) {
-      return res.status(500).json({
-        message: "Background removal failed. Check API key.",
-      });
-    }
-
-    return res.status(500).json({ message: "Server error." });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
-// ── GET USER ITEMS ───────────────────────────────────────
+/* ================= GET USER ITEMS ================= */
 export const getUserItems = (req, res) => {
   const { user_id } = req.params;
 
@@ -134,12 +163,12 @@ export const getUserItems = (req, res) => {
 
     return res.json({
       success: true,
-      items: results,
+      data: results, // ✅ IMPORTANT FIX
     });
   });
 };
 
-// ── DELETE ITEM ──────────────────────────────────────────
+/* ================= DELETE ================= */
 export const deleteItem = (req, res) => {
   const { item_id } = req.params;
 

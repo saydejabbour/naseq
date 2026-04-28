@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useAuth } from "@/context/AuthContext"; // ✅ IMPORTANT
 
 const CATEGORIES = [
   { id: 1, name: "Tops" },
@@ -14,6 +15,8 @@ const CATEGORIES = [
 ];
 
 export default function StylistAddItem() {
+  const { user } = useAuth(); // ✅ GET USER
+
   const fileInputRef = useRef(null);
 
   const [preview, setPreview] = useState(null);
@@ -31,6 +34,51 @@ export default function StylistAddItem() {
     e.preventDefault();
     setDragOver(false);
     handleFile(e.dataTransfer.files[0]);
+  };
+
+  /* ================= SAVE ITEM ================= */
+  const handleSubmit = async () => {
+    try {
+      if (!file) {
+        alert("Please upload an image");
+        return;
+      }
+
+      if (!category) {
+        alert("Please select a category");
+        return;
+      }
+
+      const formData = new FormData();
+
+      formData.append("image", file);
+      formData.append("category_id", category);
+      formData.append("user_id", user.user_id); // ✅ VERY IMPORTANT
+
+      const res = await fetch("http://127.0.0.1:5000/api/clothing/add", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      console.log("UPLOAD RESPONSE:", data);
+
+      if (data.success) {
+        alert("Item saved successfully!");
+
+        // reset
+        setPreview(null);
+        setFile(null);
+        setCategory("");
+      } else {
+        alert(data.message || "Upload failed");
+      }
+
+    } catch (err) {
+      console.error("UPLOAD ERROR:", err);
+      alert("Something went wrong");
+    }
   };
 
   return (
@@ -121,7 +169,10 @@ export default function StylistAddItem() {
         </div>
 
         {/* BUTTON */}
-        <button className="mt-8 w-full bg-[#7CB98B] hover:bg-[#6aa879] text-white py-3 rounded-xl font-medium transition">
+        <button
+          onClick={handleSubmit} // ✅ THIS WAS MISSING
+          className="mt-8 w-full bg-[#7CB98B] hover:bg-[#6aa879] text-white py-3 rounded-xl font-medium transition"
+        >
           Save Item
         </button>
 
