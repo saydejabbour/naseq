@@ -85,6 +85,7 @@ export default function CreateTemplatePage() {
 
   const [items,        setItems]        = useState([]);
   const [canvasItems,  setCanvasItems]  = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedId,   setSelectedId]   = useState(null);
   const [title,        setTitle]        = useState("");
   const [description,  setDescription]  = useState("");
@@ -386,45 +387,73 @@ export default function CreateTemplatePage() {
             </div>
           </div>
 
-          {/* CLOTHING ITEMS */}
-          <div style={s.card}>
-            <p style={s.cardTitle}>Clothing Items</p>
+        {/* CLOTHING ITEMS */}
+<div style={s.card}>
+  <p style={s.cardTitle}>Clothing Items</p>
 
-            <div style={s.selectWrap}>
-              <select style={s.select}><option>Select</option></select>
-              <ChevronDown size={15} style={s.chevron} />
-            </div>
+  {/* ✅ CATEGORY DROPDOWN (ALWAYS VISIBLE) */}
+  <div style={s.selectWrap}>
+    <select
+      value={selectedCategory}
+      onChange={(e) => setSelectedCategory(e.target.value)}
+      style={s.select}
+    >
+      <option value="">All Categories</option>
+      <option value="Tops">Tops</option>
+      <option value="Bottoms">Bottoms</option>
+      <option value="Shoes">Shoes</option>
+      <option value="Accessories">Accessories</option>
+      <option value="Dresses & Jumpsuits">Dresses & Jumpsuits</option>
+      <option value="Outerwear">Outerwear</option>
+      <option value="Bags">Bags</option>
+      <option value="Activewear">Activewear</option>
+    </select>
+  </div>
 
-            {/* Empty state */}
-            {items.length === 0 && (
-              <div style={s.emptyItems}>
-                <p style={s.emptyText}>No clothing items found.</p>
-                <p style={s.emptySubText}>
-                  Add items in <strong>My Wardrobe</strong> first,<br />
-                  or drag image files directly onto the canvas.
-                </p>
-              </div>
-            )}
+  {/* ✅ FILTER ITEMS */}
+  {(() => {
+    const filteredItems = selectedCategory
+      ? items.filter((item) => item.category === selectedCategory)
+      : items;
 
-            {/* Grid */}
-            {items.length > 0 && (
-              <div style={s.grid}>
-                {items.map((item) => (
-                  <div
-                    key={item.item_id}
-                    onPointerDown={(e) => handleSidebarPointerDown(e, item)}
-                    style={s.gridItem}
-                    title="Click or drag to canvas"
-                  >
-                    <img
-                      src={`http://localhost:5000${item.image_url}`}
-                      alt="" draggable={false} style={s.gridImg}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+    return (
+      <>
+        {/* ❌ EMPTY STATE */}
+        {filteredItems.length === 0 && (
+          <div style={s.emptyItems}>
+            <p style={s.emptyText}>No items in this category.</p>
+            <p style={s.emptySubText}>
+              Add items in <strong>My Wardrobe</strong>
+            </p>
           </div>
+        )}
+
+        {/* ✅ GRID */}
+        {filteredItems.length > 0 && (
+          <div style={s.grid}>
+            {filteredItems.map((item) => (
+              <div
+                key={item.item_id}
+                onPointerDown={(e) =>
+                  handleSidebarPointerDown(e, item)
+                }
+                style={s.gridItem}
+                title="Click or drag to canvas"
+              >
+                <img
+                  src={`http://localhost:5000${item.image_url}`}
+                  alt=""
+                  draggable={false}
+                  style={s.gridImg}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </>
+    );
+  })()}
+</div>
 
         </div>
       </div>
