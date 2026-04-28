@@ -44,7 +44,7 @@ const SUBCATEGORIES = {
   "Accessories": [
     "Belt", "Sunglasses", "Watch", "Scarf",
     "Baseball Cap", "Beanie", "Wide-Brim Hat",
-    "Gloves", "Hair Clip", "Headband",
+    "Gloves", "Hair Clip", "Headband", "Jewelry"
   ],
   "Bags": [
     "Tote Bag", "Backpack", "Shoulder Bag", "Crossbody Bag",
@@ -85,6 +85,8 @@ const OCCASIONS = [
   "Travel", "Beach / Vacation",
 ];
 
+
+
 export default function AddItemPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -106,11 +108,410 @@ export default function AddItemPage() {
   const [success, setSuccess] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
+  const applyRules = (subcategory) => {
+    if (!subcategory) return;
+
+    const rules = {
+      "Sneakers": {
+        style: "Casual",
+        season: "All Season",
+        occasion: "Everyday",
+      },
+      "Jeans": {
+        style: "Casual",
+        season: "All Season",
+        occasion: "Everyday",
+      },
+    };
+
+    if (rules[subcategory]) {
+      setForm((prev) => ({
+        ...prev,
+        ...rules[subcategory],
+      }));
+    }
+  };
+
   // ── image handling ──────────────────────────────────────
-  const handleFile = (f) => {
+  const handleFile = async (f) => {
     if (!f || !f.type.startsWith("image/")) return;
+
     setFile(f);
     setPreview(URL.createObjectURL(f));
+
+    console.log("📤 Sending to AI...");
+
+    try {
+      const formData = new FormData();
+      formData.append("image", f);
+
+      const res = await fetch("http://localhost:5000/api/ai/analyze-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      console.log("🤖 AI RESPONSE:", data);
+
+    if (data.success && data.concepts) {
+  console.log("🤖 Raw concepts:", data.concepts);
+
+  // ── FLATTEN comma-separated synonym groups ────────────────────────
+  const tokens = data.concepts
+    .flatMap((c) => c.split(","))
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+
+  console.log("🧠 Flattened tokens:", tokens);
+
+  // ── IGNORE LIST ───────────────────────────────────────────────────
+  // "mini" alone is too ambiguous — never let it decide category
+  // "purse" conflicts with skirts when AI hallucinates bag concepts
+  const IGNORE = new Set([
+    "mini",           // too ambiguous alone — handled via explicit "miniskirt"
+    "bra", "underwear", "lingerie", "nightgown", "negligee",
+    "panty", "thong", "swimwear", "swimming trunks", "bathing trunks",
+    "diaper", "napkin", "seat belt", "body part", "person",
+    "knee pad", "handkerchief", "hankie", "hanky", "hankey",
+    "notecase",       // old word for wallet, irrelevant
+  ]);
+  const filtered = tokens.filter((t) => !IGNORE.has(t));
+
+  // ── SKIRT LENGTH HINTS ────────────────────────────────────────────
+  // These tokens from the AI strongly suggest a LONG skirt
+  const LONG_SKIRT_HINTS = new Set([
+    "overskirt", "hoopskirt", "crinoline", "sarong",
+    "maxi", "floor-length", "full-length", "petticoat",
+  ]);
+  const hasLongSkirtHint = filtered.some((t) => LONG_SKIRT_HINTS.has(t));
+
+  // ── DRESS HINTS ───────────────────────────────────────────────────
+  // If AI returns skirt-structure words alongside "gown" or bodice words,
+  // it's likely a dress, not just a skirt
+  const DRESS_HINTS = new Set([
+    "dress", "gown", "frock", "bodice", "corset top",
+    "cocktail dress", "sundress", "evening gown",
+  ]);
+  const hasDressHint = filtered.some((t) =>
+    [...DRESS_HINTS].some((d) => t.includes(d))
+  );
+
+  // ── CATEGORY SCORING ──────────────────────────────────────────────
+  const CATEGORY_SIGNALS = {
+    3: { // Shoes — highest priority when present
+      weight: 4,
+      keywords: [
+        "shoe", "shoes", "footwear", "sneaker", "sneakers",
+        "heel", "heels", "stiletto", "pump", "pumps",
+        "sandal", "sandals", "slingback", "mule", "mules",
+        "boot", "boots", "loafer", "loafers", "oxford",
+        "flat", "flats", "ballet flat", "wedge", "wedges",
+        "platform shoe", "slipper", "slip-on", "clogs",
+        "ankle boot", "knee-high boot", "chelsea boot",
+      ],
+    },
+    7: { // Bags
+      weight: 3,
+      keywords: [
+        // ⚠️ "purse" removed — AI hallucinates it for skirts
+        "bag", "bags", "handbag", "tote",
+        "backpack", "clutch", "satchel", "pouch",
+        "wallet", "billfold", "pocketbook",  // keep these for actual bags
+        "crossbody", "shoulder bag", "fanny pack",
+        "bucket bag", "luggage",
+      ],
+    },
+    5: { // Dresses & Jumpsuits
+      weight: 3,
+      keywords: [
+        "dress", "gown", "frock", "evening gown",
+        "cocktail dress", "sundress", "maxi dress", "mini dress",
+        "midi dress", "wrap dress", "slip dress",
+        "jumpsuit", "romper", "playsuit", "overall", "overalls",
+      ],
+    },
+    4: { // Accessories
+      weight: 3,
+      keywords: [
+        "jewelry", "jewellery", "necklace", "ring", "bracelet",
+        "earring", "earrings", "pendant", "chain", "choker",
+        "bangle", "brooch", "watch", "sunglasses", "glasses",
+        "belt", "scarf", "hat", "cap", "beanie", "gloves",
+        "hair clip", "headband", "tie", "bow tie", "bandana",
+      ],
+    },
+    6: { // Outerwear
+      weight: 3,
+      keywords: [
+        "coat", "jacket", "blazer", "outerwear", "overcoat",
+        "trench coat", "parka", "puffer", "windbreaker",
+        "bomber", "leather jacket", "denim jacket", "peacoat",
+        "raincoat", "cape", "poncho", "wool coat",
+      ],
+    },
+    2: { // Bottoms
+      weight: 3,
+      keywords: [
+        "jean", "jeans", "denim", "blue jean",
+        "pants", "trousers", "chinos", "shorts",
+        "sweatpants", "joggers", "legging", "leggings",
+        "skirt", "miniskirt", "overskirt", "hoopskirt",
+        "crinoline", "sarong", "petticoat",
+        "mini skirt", "midi skirt", "maxi skirt", "denim skirt",
+        "dress pants", "slacks", "cargo pants",
+      ],
+    },
+    8: { // Activewear
+      weight: 2,
+      keywords: [
+        "sports bra", "athletic", "activewear", "sportswear",
+        "compression", "track jacket", "track pants",
+        "cycling shorts", "tennis skirt", "rashguard",
+        "workout", "gym wear", "yoga pants",
+      ],
+    },
+    1: { // Tops
+      weight: 2,
+      keywords: [
+        "shirt", "top", "blouse", "tee", "t-shirt", "tee shirt",
+        "polo", "button-down", "tank top", "crop top", "bodysuit",
+        "sweater", "turtleneck", "cardigan", "hoodie",
+        "sweatshirt", "jersey", "tunic", "camisole", "knit",
+      ],
+    },
+  };
+
+  // ── SCORE CATEGORIES ──────────────────────────────────────────────
+  const scores = {};
+  for (const [catId, { keywords, weight }] of Object.entries(CATEGORY_SIGNALS)) {
+    scores[catId] = 0;
+    for (const token of filtered) {
+      for (const kw of keywords) {
+        if (token === kw || token.includes(kw) || kw.includes(token)) {
+          scores[catId] += weight;
+        }
+      }
+    }
+  }
+
+  // ── BOOST: if bag tokens exist alongside strong skirt tokens, kill bag score ──
+  const skirtTokens = ["miniskirt", "overskirt", "hoopskirt", "crinoline", "sarong", "skirt"];
+  const hasSkirtToken = filtered.some((t) => skirtTokens.some((s) => t.includes(s)));
+  if (hasSkirtToken && scores[7] > 0) {
+    console.log("🚫 Suppressing Bags score — skirt tokens present");
+    scores[7] = 0;
+  }
+
+  // ── BOOST: "gown" alongside skirt words = likely a dress, boost cat 5 ──
+  if (hasDressHint && scores[2] > 0) {
+    scores[5] += 6;
+    console.log("👗 Boosted Dresses score — dress hint found alongside skirt tokens");
+  }
+
+  console.log("📊 Category scores:", scores);
+
+  // ── PICK BEST CATEGORY ────────────────────────────────────────────
+  const bestCatId = Object.entries(scores)
+    .sort((a, b) => b[1] - a[1])
+    .find(([, score]) => score > 0)?.[0];
+
+  const detectedCategory = bestCatId ? parseInt(bestCatId) : 1;
+
+  // ── SUBCATEGORY SIGNALS ───────────────────────────────────────────
+  const SUBCATEGORY_SIGNALS = {
+    3: [
+      { sub: "Heels",           keywords: ["heel", "heels", "stiletto", "pump", "pumps", "kitten heel", "slingback", "block heel"] },
+      { sub: "Sandals",         keywords: ["sandal", "sandals", "flip flop", "espadrille"] },
+      { sub: "Slides",          keywords: ["slide", "slides"] },
+      { sub: "Mules",           keywords: ["mule", "mules", "clog", "clogs"] },
+      { sub: "Sneakers",        keywords: ["sneaker", "sneakers", "trainer", "runners", "athletic shoe"] },
+      { sub: "Ankle Boots",     keywords: ["ankle boot", "bootie", "booties"] },
+      { sub: "Knee-High Boots", keywords: ["knee-high boot", "knee high", "thigh-high"] },
+      { sub: "Chelsea Boots",   keywords: ["chelsea boot", "chelsea"] },
+      { sub: "Loafers",         keywords: ["loafer", "loafers", "slip-on"] },
+      { sub: "Oxford Shoes",    keywords: ["oxford", "brogue", "derby"] },
+      { sub: "Ballet Flats",    keywords: ["flat", "flats", "ballet flat"] },
+      { sub: "Sneakers",        keywords: ["shoe", "footwear", "boot", "boots"] },
+    ],
+    7: [
+      { sub: "Tote Bag",      keywords: ["tote", "shopper"] },
+      { sub: "Backpack",      keywords: ["backpack", "rucksack"] },
+      { sub: "Clutch",        keywords: ["clutch", "evening bag"] },
+      { sub: "Crossbody Bag", keywords: ["crossbody", "cross body"] },
+      { sub: "Mini Bag",      keywords: ["mini bag", "micro bag"] },
+      { sub: "Bucket Bag",    keywords: ["bucket bag", "bucket"] },
+      { sub: "Fanny Pack",    keywords: ["fanny pack", "belt bag", "waist bag"] },
+      { sub: "Shoulder Bag",  keywords: ["handbag", "satchel", "shoulder bag", "bag"] },
+    ],
+    5: [
+      { sub: "Evening Gown",  keywords: ["gown", "evening gown", "ball gown", "formal dress"] },
+      { sub: "Maxi Dress",    keywords: ["maxi dress"] },
+      { sub: "Midi Dress",    keywords: ["midi dress", "midi"] },
+      { sub: "Mini Dress",    keywords: ["mini dress", "miniskirt", "mini skirt"] }, // AI calls mini dresses "miniskirt"
+      { sub: "Wrap Dress",    keywords: ["wrap dress"] },
+      { sub: "Slip Dress",    keywords: ["slip dress"] },
+      { sub: "Bodycon Dress", keywords: ["bodycon", "fitted dress"] },
+      { sub: "Jumpsuit",      keywords: ["jumpsuit", "overall", "overalls"] },
+      { sub: "Romper",        keywords: ["romper", "playsuit"] },
+      { sub: "Sundress",      keywords: ["sundress", "summer dress"] },
+      { sub: "Mini Dress",    keywords: ["dress", "frock"] },
+    ],
+    4: [
+      { sub: "Jewelry",       keywords: ["jewelry", "jewellery", "necklace", "ring", "bracelet", "earring", "earrings", "pendant", "chain", "choker", "bangle", "brooch"] },
+      { sub: "Watch",         keywords: ["watch", "timepiece", "wristwatch"] },
+      { sub: "Sunglasses",    keywords: ["sunglasses", "glasses", "eyewear", "shades"] },
+      { sub: "Belt",          keywords: ["belt"] },
+      { sub: "Scarf",         keywords: ["scarf", "shawl"] },
+      { sub: "Baseball Cap",  keywords: ["cap", "baseball cap", "snapback"] },
+      { sub: "Beanie",        keywords: ["beanie", "knit hat"] },
+      { sub: "Wide-Brim Hat", keywords: ["hat", "wide-brim", "fedora", "beret"] },
+      { sub: "Gloves",        keywords: ["glove", "gloves"] },
+      { sub: "Hair Clip",     keywords: ["hair clip", "hairpin", "barrette"] },
+      { sub: "Headband",      keywords: ["headband"] },
+      { sub: "Jewelry",       keywords: ["accessory", "accessories"] },
+    ],
+    6: [
+      { sub: "Trench Coat",    keywords: ["trench coat", "trench"] },
+      { sub: "Wool Coat",      keywords: ["wool coat", "overcoat", "peacoat"] },
+      { sub: "Puffer Jacket",  keywords: ["puffer", "down jacket", "quilted jacket"] },
+      { sub: "Leather Jacket", keywords: ["leather jacket"] },
+      { sub: "Denim Jacket",   keywords: ["denim jacket", "jean jacket"] },
+      { sub: "Bomber Jacket",  keywords: ["bomber", "flight jacket"] },
+      { sub: "Blazer",         keywords: ["blazer", "sport coat"] },
+      { sub: "Windbreaker",    keywords: ["windbreaker", "anorak"] },
+      { sub: "Parka",          keywords: ["parka"] },
+      { sub: "Blazer",         keywords: ["coat", "jacket"] },
+    ],
+    2: [
+      { sub: "Jeans",       keywords: ["jean", "jeans", "denim", "blue jean"] },
+      { sub: "Trousers",    keywords: ["trousers", "slacks", "dress pants"] },
+      { sub: "Chinos",      keywords: ["chinos", "chino"] },
+      { sub: "Shorts",      keywords: ["shorts"] },
+      { sub: "Leggings",    keywords: ["leggings", "legging"] },
+      { sub: "Joggers",     keywords: ["joggers", "sweatpants", "track pants"] },
+      // Long skirt hints → Maxi Skirt (checked FIRST before miniskirt)
+      { sub: "Maxi Skirt",  keywords: ["overskirt", "hoopskirt", "crinoline", "sarong", "petticoat"] },
+      { sub: "Mini Skirt",  keywords: ["miniskirt"] },
+      { sub: "Midi Skirt",  keywords: ["midi skirt"] },
+      { sub: "Maxi Skirt",  keywords: ["maxi skirt"] },
+      { sub: "Denim Skirt", keywords: ["denim skirt"] },
+      { sub: "Mini Skirt",  keywords: ["skirt"] },
+      { sub: "Jeans",       keywords: ["pants", "bottom"] },
+    ],
+    8: [
+      { sub: "Sports Bra",           keywords: ["sports bra"] },
+      { sub: "Compression Leggings", keywords: ["leggings", "compression", "yoga pants"] },
+      { sub: "Athletic Shorts",      keywords: ["athletic shorts", "gym shorts", "running shorts"] },
+      { sub: "Track Jacket",         keywords: ["track jacket"] },
+      { sub: "Track Pants",          keywords: ["track pants", "joggers"] },
+      { sub: "Cycling Shorts",       keywords: ["cycling shorts", "bike shorts"] },
+      { sub: "Tennis Skirt",         keywords: ["tennis skirt"] },
+      { sub: "Rashguard",            keywords: ["rashguard", "rash guard"] },
+    ],
+    1: [
+      { sub: "Cardigan",          keywords: ["cardigan"] },
+      { sub: "Hoodie",            keywords: ["hoodie", "hooded"] },
+      { sub: "Sweatshirt",        keywords: ["sweatshirt"] },
+      { sub: "Sweater",           keywords: ["sweater", "pullover", "knitwear", "knit"] },
+      { sub: "Turtleneck",        keywords: ["turtleneck", "mock neck", "polo neck"] },
+      { sub: "Polo Shirt",        keywords: ["polo"] },
+      { sub: "Button-Down Shirt", keywords: ["button-down", "button down"] },
+      { sub: "Blouse",            keywords: ["blouse"] },
+      { sub: "Tank Top",          keywords: ["tank top", "tank", "camisole", "spaghetti strap"] },
+      { sub: "Crop Top",          keywords: ["crop top", "crop"] },
+      { sub: "Bodysuit",          keywords: ["bodysuit"] },
+      { sub: "T-Shirt",           keywords: ["t-shirt", "tee", "tee shirt", "jersey"] },
+      { sub: "T-Shirt",           keywords: ["shirt", "top"] },
+    ],
+  };
+
+  // ── PICK BEST SUBCATEGORY ─────────────────────────────────────────
+  const subOptions = SUBCATEGORY_SIGNALS[detectedCategory] || [];
+  let detectedSub = "";
+
+  // Special override: if long skirt hints present and we're in Bottoms → force Maxi Skirt
+  if (detectedCategory === 2 && hasLongSkirtHint) {
+    detectedSub = "Maxi Skirt";
+    console.log("📏 Long skirt hint detected → forcing Maxi Skirt");
+  } else {
+    outer:
+    for (const { sub, keywords: subKws } of subOptions) {
+      for (const token of filtered) {
+        for (const kw of subKws) {
+          if (token === kw || token.includes(kw) || kw.includes(token)) {
+            detectedSub = sub;
+            break outer;
+          }
+        }
+      }
+    }
+  }
+
+  if (!detectedSub && subOptions.length > 0) {
+    detectedSub = subOptions[subOptions.length - 1].sub;
+  }
+
+  // ── COLOR DETECTION ───────────────────────────────────────────────
+  const COLOR_MAP = {
+    "White":        ["white", "ivory", "cream", "off-white"],
+    "Black":        ["black", "ebony", "jet"],
+    "Navy":         ["navy", "dark blue", "midnight blue", "navy blue"],
+    "Light Blue":   ["light blue", "baby blue", "sky blue", "denim blue", "pale blue", "blue"],
+    "Red":          ["red", "crimson", "scarlet"],
+    "Burgundy":     ["burgundy", "wine", "maroon", "bordeaux"],
+    "Pink":         ["pink", "hot pink", "fuchsia", "magenta", "blush pink", "rose"],
+    "Blush":        ["blush", "dusty pink", "nude pink"],
+    "Orange":       ["orange", "coral", "rust"],
+    "Yellow":       ["yellow", "lemon", "lime yellow"],
+    "Mustard":      ["mustard", "gold"],
+    "Olive":        ["olive", "khaki"],
+    "Forest Green": ["green", "forest green", "emerald", "hunter green"],
+    "Sage":         ["sage", "mint", "pastel green"],
+    "Camel":        ["camel", "tan", "sand"],
+    "Beige":        ["beige", "ecru", "nude"],
+    "Brown":        ["brown", "chocolate", "mocha", "coffee", "cognac"],
+    "Light Gray":   ["gray", "grey", "silver", "light gray"],
+    "Charcoal":     ["charcoal", "dark gray", "dark grey"],
+    "Purple":       ["purple", "violet", "plum"],
+    "Lavender":     ["lavender", "lilac", "mauve"],
+    "Patterned":    ["patterned", "floral", "striped", "checked", "plaid", "animal print", "leopard", "zebra"],
+    "Multicolor":   ["multicolor", "multicolour", "colorful"],
+  };
+
+  let detectedColor = "";
+  outerColor:
+  for (const token of filtered) {
+    for (const [colorName, aliases] of Object.entries(COLOR_MAP)) {
+      for (const alias of aliases) {
+        if (token === alias || token.includes(alias)) {
+          detectedColor = colorName;
+          break outerColor;
+        }
+      }
+    }
+  }
+  if (!detectedColor) detectedColor = "Multicolor";
+
+  console.log(`✅ Detected → cat: ${detectedCategory}, sub: "${detectedSub}", color: "${detectedColor}"`);
+
+  // ── APPLY TO FORM ─────────────────────────────────────────────────
+  setForm((prev) => ({
+    ...prev,
+    category_id: detectedCategory,
+    color: detectedColor,
+    style: prev.style || "Casual",
+    season: prev.season || "All Season",
+    occasion: prev.occasion || "Everyday",
+  }));
+
+  setSubcategory(detectedSub);
+  applyRules(detectedSub);
+}
+
+    } catch (err) {
+      console.error("AI ERROR:", err);
+    }
   };
 
   const onFileChange = (e) => handleFile(e.target.files[0]);
