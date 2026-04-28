@@ -39,7 +39,7 @@ router.post(
         [full_name, email, bio, profileImage, user_id],
         (err, result) => {
           if (err) {
-            console.error(err);
+            console.error("APPLICATION ERROR:", err);
             return res.status(500).json({
               success: false,
               message: "Database error",
@@ -67,7 +67,7 @@ router.post(
         }
       );
     } catch (err) {
-      console.error(err);
+      console.error("APPLY SERVER ERROR:", err);
       res.status(500).json({
         success: false,
         message: "Server error",
@@ -77,83 +77,160 @@ router.post(
 );
 
 /* ================= CREATE TEMPLATE ================= */
-router.post(
-  "/templates",
-  upload.single("inspiration_image"),
-  async (req, res) => {
-    try {
-      const {
-        stylist_id,
-        title,
-        description,
-        occasion,
-        items,
-      } = req.body;
+router.post("/templates", async (req, res) => {
+  try {
+    const { stylist_id, title, description, occasion, items } = req.body;
 
-      const imageFile = req.file?.filename;
-
-      if (!stylist_id || !title) {
-        return res.status(400).json({
-          success: false,
-          message: "Missing required fields",
-        });
-      }
-
-      /* 1️⃣ INSERT TEMPLATE */
-      const [result] = await db.promise().query(
-        `INSERT INTO stylist_templates 
-         (stylist_id, title, description, occasion, image_url)
-         VALUES (?, ?, ?, ?, ?)`,
-        [
-          stylist_id,
-          title,
-          description || null,
-          occasion || null,
-          imageFile ? `/uploads/${imageFile}` : null,
-        ]
-      );
-
-      const templateId = result.insertId;
-
-      /* 2️⃣ INSERT ITEMS */
-      let parsedItems = [];
-
-      try {
-        parsedItems = JSON.parse(items);
-      } catch {
-        parsedItems = [];
-      }
-
-      if (Array.isArray(parsedItems) && parsedItems.length > 0) {
-        const values = parsedItems
-          .map((item) => {
-            const itemId = item.item_id || item.itemId;
-            return itemId ? [templateId, itemId] : null;
-          })
-          .filter(Boolean);
-
-        if (values.length > 0) {
-          await db.promise().query(
-            `INSERT INTO stylist_template_items (template_id, item_id) VALUES ?`,
-            [values]
-          );
-        }
-      }
-
-      return res.json({
-        success: true,
-        message: "Template saved",
-      });
-
-    } catch (err) {
-      console.error("TEMPLATE ERROR:", err);
-      return res.status(500).json({
+    if (!stylist_id || !title) {
+      return res.status(400).json({
         success: false,
-        message: "Template save failed",
+        message: "Missing required fields",
       });
     }
-  }
-);
 
-/* 🔥 THIS LINE WAS YOUR PROBLEM */
+    const [profileRows] = await db.promise().query(
+      "SELECT stylist_id FROM stylist_profiles WHERE user_id = ?",
+      [stylist_id]
+    );
+
+    if (profileRows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Stylist profile not found.",
+      });
+    }
+
+    const realStylistId = profileRows[0].stylist_id;
+    const parsedItems = Array.isArray(items) ? items : [];
+
+    const itemIds = parsedItems
+      .map((item) => item.item_id || item.itemId)
+      .filter(Boolean);
+
+    let templateImage = null;
+
+    if (itemIds.length > 0) {
+      const [imageRows] = await db.promise().query(
+        `SELECT image_url
+         FROM clothing_items
+         WHERE item_id = ?
+         LIMIT 1`,
+        [itemIds[0]]
+      );
+
+      if (imageRows.length > 0) {
+        templateImage = imageRows[0].image_url;
+      }
+    }
+
+    const [result] = await db.promise().query(
+      `INSERT INTO stylist_templates 
+       (stylist_id, title, description, occasion, image_url)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        realStylistId,
+        title,
+        description || "",
+        occasion || "",
+        templateImage,
+      ]
+    );
+
+    const templateId = result.insertId;
+
+    if (itemIds.length > 0) {
+      const values = itemIds.map((itemId) => [templateId, itemId]);
+
+      await db.promise().query(
+        `INSERT INTO stylist_template_items (template_id, item_id) VALUES ?`,
+        [values]
+      );
+    }
+
+    return res.json({
+      success: true,
+      message: "Template saved",
+      data: {
+        template_id: templateId,
+        image_url: templateImage,
+      },
+    });
+  } catch (err) {
+    console.error("CREATE TEMPLATE ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Template save failed",
+      error: err.message,
+    });
+  }
+});
+
+/* ================= GET MY TEMPLATES ================= */
+router.get("/templates/user/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    const [profileRows] = await db.promise().query(
+      "SELECT stylist_id FROM stylist_profiles WHERE user_id = ?",
+      [user_id]
+    );
+
+    if (profileRows.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+      });
+    }
+
+    const realStylistId = profileRows[0].stylist_id;
+
+    const [templates] = await db.promise().query(
+      `SELECT *
+       FROM stylist_templates
+       WHERE stylist_id = ?
+       ORDER BY template_id DESC`,
+      [realStylistId]
+    );
+
+    return res.json({
+      success: true,
+      data: templates,
+    });
+  } catch (err) {
+    console.error("GET MY TEMPLATES ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch templates",
+    });
+  }
+});
+
+/* ================= DELETE TEMPLATE ================= */
+router.delete("/templates/:template_id", async (req, res) => {
+  try {
+    const { template_id } = req.params;
+
+    await db.promise().query(
+      "DELETE FROM stylist_template_items WHERE template_id = ?",
+      [template_id]
+    );
+
+    await db.promise().query(
+      "DELETE FROM stylist_templates WHERE template_id = ?",
+      [template_id]
+    );
+
+    return res.json({
+      success: true,
+      message: "Template deleted",
+    });
+  } catch (err) {
+    console.error("DELETE TEMPLATE ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete template",
+    });
+  }
+});
+
 export default router;

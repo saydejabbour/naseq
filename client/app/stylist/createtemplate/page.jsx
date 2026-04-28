@@ -5,30 +5,35 @@ import { useAuth } from "@/context/AuthContext";
 import { Trash2, Upload, ChevronDown, Save, ImagePlus } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 
-/* ─────────────────────────────────────────────
-   CANVAS ITEM – pointer-based drag
-───────────────────────────────────────────── */
 function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
   const dragging = useRef(false);
-  const origin   = useRef({});
+  const origin = useRef({});
 
   const handlePointerDown = (e) => {
     e.stopPropagation();
     onSelect(item.id);
     dragging.current = true;
-    origin.current   = { mx: e.clientX, my: e.clientY, ix: item.x, iy: item.y };
+    origin.current = {
+      mx: e.clientX,
+      my: e.clientY,
+      ix: item.x,
+      iy: item.y,
+    };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e) => {
     if (!dragging.current) return;
+
     onChange(item.id, {
       x: origin.current.ix + (e.clientX - origin.current.mx),
       y: origin.current.iy + (e.clientY - origin.current.my),
     });
   };
 
-  const handlePointerUp = () => { dragging.current = false; };
+  const handlePointerUp = () => {
+    dragging.current = false;
+  };
 
   return (
     <div
@@ -37,36 +42,63 @@ function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
       onPointerUp={handlePointerUp}
       style={{
         position: "absolute",
-        left: item.x, top: item.y,
-        width: item.width, height: item.height,
+        left: item.x,
+        top: item.y,
+        width: item.width,
+        height: item.height,
         transform: `rotate(${item.rotation || 0}deg)`,
         zIndex: isSelected ? 50 : 10,
-        cursor: "grab", userSelect: "none", touchAction: "none",
+        cursor: "grab",
+        userSelect: "none",
+        touchAction: "none",
       }}
     >
       {isSelected && (
-        <div style={{
-          position: "absolute", inset: 0,
-          border: "2px dashed #7CB98B",
-          borderRadius: 6, pointerEvents: "none",
-        }} />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            border: "2px dashed #7CB98B",
+            borderRadius: 6,
+            pointerEvents: "none",
+          }}
+        />
       )}
 
       <img
-        src={item.imageUrl} alt="" draggable={false}
-        style={{ width: "100%", height: "100%", objectFit: "contain", pointerEvents: "none" }}
+        src={item.imageUrl}
+        alt=""
+        draggable={false}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          pointerEvents: "none",
+        }}
       />
 
       {isSelected && (
         <button
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(item.id);
+          }}
           style={{
-            position: "absolute", top: -10, right: -10,
-            background: "#ef4444", color: "#fff", border: "none",
-            borderRadius: "50%", width: 22, height: 22,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", zIndex: 60,
+            position: "absolute",
+            top: -10,
+            right: -10,
+            background: "#ef4444",
+            color: "#fff",
+            border: "none",
+            borderRadius: "50%",
+            width: 22,
+            height: 22,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 60,
           }}
         >
           <Trash2 size={11} />
@@ -76,31 +108,32 @@ function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   MAIN PAGE
-───────────────────────────────────────────── */
 export default function CreateTemplatePage() {
-  const { user }      = useAuth();
+  const { user } = useAuth();
   const { showToast } = useToast();
 
-  const [items,        setItems]        = useState([]);
-  const [canvasItems,  setCanvasItems]  = useState([]);
+  const [items, setItems] = useState([]);
+  const [canvasItems, setCanvasItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedId,   setSelectedId]   = useState(null);
-  const [title,        setTitle]        = useState("");
-  const [description,  setDescription]  = useState("");
-  const [occasion,     setOccasion]     = useState("");
+  const [selectedId, setSelectedId] = useState(null);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [occasion, setOccasion] = useState("");
   const [inspirationImage, setInspirationImage] = useState(null);
-  const [isDraggingOver,   setIsDraggingOver]   = useState(false); // files from OS
-  const [isSidebarDrag,    setIsSidebarDrag]    = useState(false); // sidebar items
+
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isSidebarDrag, setIsSidebarDrag] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   const canvasRef = useRef(null);
-  const ghostRef  = useRef(null);
+  const ghostRef = useRef(null);
+  const canvasFileInputRef = useRef(null);
 
-  /* ── Fetch user's clothing items ── */
   useEffect(() => {
     if (!user?.user_id) return;
-    fetch(`http://127.0.0.1:5000/api/clothing/user/${user.user_id}`)
+
+    fetch(`http://localhost:5000/api/clothing/user/${user.user_id}`)
       .then((r) => r.json())
       .then((d) => {
         console.log("Clothing API response:", d);
@@ -109,174 +142,247 @@ export default function CreateTemplatePage() {
       .catch((err) => console.error("Clothing fetch error:", err));
   }, [user]);
 
-  /* ── Add item to canvas at a given client position ── */
   const addItemAtPos = useCallback((imageUrl, clientX, clientY, extraProps = {}) => {
     const canvas = canvasRef.current;
-    let x = 80, y = 80;
+
+    let x = 80;
+    let y = 80;
+
     if (canvas && clientX != null) {
       const r = canvas.getBoundingClientRect();
-      x = Math.max(0, Math.min(clientX - r.left - 60, r.width  - 120));
-      y = Math.max(0, Math.min(clientY - r.top  - 75, r.height - 150));
+      x = Math.max(0, Math.min(clientX - r.left - 60, r.width - 120));
+      y = Math.max(0, Math.min(clientY - r.top - 75, r.height - 150));
     }
+
     setCanvasItems((prev) => [
       ...prev,
-      { id: Date.now(), imageUrl, x, y, width: 120, height: 150, rotation: 0, ...extraProps },
+      {
+        id: Date.now() + Math.random(),
+        imageUrl,
+        x,
+        y,
+        width: 120,
+        height: 150,
+        rotation: 0,
+        ...extraProps,
+      },
     ]);
   }, []);
 
-  /* ── Sidebar clothing item: pointer drag → drop on canvas ── */
   const handleSidebarPointerDown = (e, item) => {
     e.preventDefault();
+
     let moved = false;
 
     const ghost = document.createElement("img");
-    ghost.src   = `http://localhost:5000${item.image_url}`;
+    ghost.src = `http://localhost:5000${item.image_url}`;
+
     Object.assign(ghost.style, {
-      position: "fixed", width: "80px", height: "100px",
-      objectFit: "contain", pointerEvents: "none", zIndex: "9999",
-      opacity: "0.85", borderRadius: "8px", background: "#fff",
+      position: "fixed",
+      width: "80px",
+      height: "100px",
+      objectFit: "contain",
+      pointerEvents: "none",
+      zIndex: "9999",
+      opacity: "0.85",
+      borderRadius: "8px",
+      background: "#fff",
       boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-      left: `${e.clientX - 40}px`, top: `${e.clientY - 50}px`,
+      left: `${e.clientX - 40}px`,
+      top: `${e.clientY - 50}px`,
     });
+
     document.body.appendChild(ghost);
     ghostRef.current = ghost;
 
     const onMove = (ev) => {
       moved = true;
+
       ghost.style.left = `${ev.clientX - 40}px`;
-      ghost.style.top  = `${ev.clientY - 50}px`;
+      ghost.style.top = `${ev.clientY - 50}px`;
+
       const c = canvasRef.current;
+
       if (c) {
         const r = c.getBoundingClientRect();
+
         setIsSidebarDrag(
-          ev.clientX >= r.left && ev.clientX <= r.right &&
-          ev.clientY >= r.top  && ev.clientY <= r.bottom
+          ev.clientX >= r.left &&
+            ev.clientX <= r.right &&
+            ev.clientY >= r.top &&
+            ev.clientY <= r.bottom
         );
       }
     };
 
     const onUp = (ev) => {
       document.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerup",   onUp);
+      document.removeEventListener("pointerup", onUp);
+
       ghost.remove();
       ghostRef.current = null;
       setIsSidebarDrag(false);
 
       const c = canvasRef.current;
       const r = c?.getBoundingClientRect();
-      const onCanvas = r &&
-        ev.clientX >= r.left && ev.clientX <= r.right &&
-        ev.clientY >= r.top  && ev.clientY <= r.bottom;
+
+      const onCanvas =
+        r &&
+        ev.clientX >= r.left &&
+        ev.clientX <= r.right &&
+        ev.clientY >= r.top &&
+        ev.clientY <= r.bottom;
 
       if (onCanvas || !moved) {
         addItemAtPos(
           `http://localhost:5000${item.image_url}`,
-          ev.clientX, ev.clientY,
-          { item_id: item.item_id }
+          ev.clientX,
+          ev.clientY,
+          {
+            item_id: item.item_id,
+          }
         );
       }
     };
 
     document.addEventListener("pointermove", onMove);
-    document.addEventListener("pointerup",   onUp);
+    document.addEventListener("pointerup", onUp);
   };
 
-  /* ── Canvas: drop FILES from OS (images from folder) ── */
   const handleCanvasDragOver = (e) => {
     e.preventDefault();
     setIsDraggingOver(true);
   };
-  const handleCanvasDragLeave = () => setIsDraggingOver(false);
+
+  const handleCanvasDragLeave = () => {
+    setIsDraggingOver(false);
+  };
 
   const handleCanvasDrop = (e) => {
     e.preventDefault();
     setIsDraggingOver(false);
 
-    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/"));
-    if (files.length === 0) return;
-
-    files.forEach((file, i) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        // stagger slightly so multiple files don't overlap exactly
-        addItemAtPos(reader.result, e.clientX + i * 20, e.clientY + i * 20);
-      };
-      reader.readAsDataURL(file);
-    });
+    showToast(
+      "For publishing, please use wardrobe items from the right sidebar.",
+      "error"
+    );
   };
 
-  /* ── Canvas: click to pick file from folder ── */
-  const canvasFileInputRef = useRef(null);
   const handleCanvasFileChange = (e) => {
-    Array.from(e.target.files).forEach((file, i) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const canvas = canvasRef.current;
-        const r = canvas?.getBoundingClientRect();
-        const cx = r ? r.left + r.width  / 2 + i * 20 : 200 + i * 20;
-        const cy = r ? r.top  + r.height / 2 + i * 20 : 200 + i * 20;
-        addItemAtPos(reader.result, cx, cy);
-      };
-      reader.readAsDataURL(file);
-    });
     e.target.value = "";
+    showToast(
+      "For publishing, please use wardrobe items from the right sidebar.",
+      "error"
+    );
   };
 
-  /* ── Canvas item helpers ── */
-  const updateItem = (id, patch) =>
-    setCanvasItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+  const updateItem = (id, patch) => {
+    setCanvasItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, ...patch } : i))
+    );
+  };
 
   const removeItem = (id) => {
     setCanvasItems((prev) => prev.filter((i) => i.id !== id));
     setSelectedId(null);
   };
 
-  /* ── Inspiration image ── */
   const handleInspirationFile = (file) => {
     if (!file) return;
+
     const reader = new FileReader();
-    reader.onloadend = () => setInspirationImage(reader.result);
+
+    reader.onloadend = () => {
+      setInspirationImage(reader.result);
+    };
+
     reader.readAsDataURL(file);
   };
 
-  /* ── Publish ── */
   const handlePublish = async () => {
-    if (!title) return showToast("Enter a template name", "error");
-    await fetch("http://localhost:5000/api/stylist/templates", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        stylist_id: user.user_id,
-        title, description, occasion,
-        inspiration_image: inspirationImage,
-        items: canvasItems,
-      }),
-    });
-    showToast("Template published!");
+    if (!user?.user_id) {
+      return showToast("You must be logged in", "error");
+    }
+
+    if (!title.trim()) {
+      return showToast("Enter a template name", "error");
+    }
+
+    const realWardrobeItems = canvasItems.filter((item) => item.item_id);
+
+    if (realWardrobeItems.length === 0) {
+      return showToast(
+        "Please drag at least one clothing item from the right sidebar.",
+        "error"
+      );
+    }
+
+    try {
+      setPublishing(true);
+
+      console.log("ITEMS SENT TO BACKEND:", realWardrobeItems);
+
+      const res = await fetch("http://localhost:5000/api/stylist/templates", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          stylist_id: user.user_id,
+          title: title.trim(),
+          description,
+          occasion,
+          items: realWardrobeItems,
+        }),
+      });
+
+      const data = await res.json();
+
+      console.log("PUBLISH TEMPLATE RESPONSE:", data);
+
+      if (!res.ok || !data.success) {
+        return showToast(data.message || "Template was not published", "error");
+      }
+
+      showToast("Template published!", "success");
+
+      setTitle("");
+      setDescription("");
+      setOccasion("");
+      setInspirationImage(null);
+      setCanvasItems([]);
+      setSelectedId(null);
+    } catch (err) {
+      console.error("Publish error:", err);
+      showToast("Server error. Template was not published.", "error");
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const highlightCanvas = isDraggingOver || isSidebarDrag;
 
-  /* ─────────── RENDER ─────────── */
   return (
     <div style={s.page}>
-
-      {/* HEADER */}
       <div style={s.header}>
         <h1 style={s.heading}>Create Template</h1>
-        <button onClick={handlePublish} style={s.publishBtn}>
+
+        <button
+          onClick={handlePublish}
+          style={{
+            ...s.publishBtn,
+            opacity: publishing ? 0.7 : 1,
+            cursor: publishing ? "not-allowed" : "pointer",
+          }}
+          disabled={publishing}
+        >
           <Save size={15} style={{ marginRight: 6 }} />
-          Publish Template
+          {publishing ? "Publishing..." : "Publish Template"}
         </button>
       </div>
 
-      {/* BODY */}
       <div style={s.body}>
-
-        {/* ── LEFT COLUMN ── */}
         <div style={s.left}>
-
-          {/* CANVAS */}
           <div
             ref={canvasRef}
             onClick={() => setSelectedId(null)}
@@ -286,39 +392,55 @@ export default function CreateTemplatePage() {
             style={{
               ...s.canvas,
               borderColor: highlightCanvas ? "#7CB98B" : "#d6c9bc",
-              background:  highlightCanvas ? "#f0f7f2"  : "#fff",
+              background: highlightCanvas ? "#f0f7f2" : "#fff",
             }}
           >
             {canvasItems.length === 0 && (
               <div style={s.canvasEmpty}>
                 <ImagePlus size={32} color="#ccc" />
-                <p style={s.canvasHint}>Drag clothing items or image files here</p>
+                <p style={s.canvasHint}>
+                  Drag clothing items from the right sidebar here
+                </p>
+
                 <button
-                  onClick={(e) => { e.stopPropagation(); canvasFileInputRef.current?.click(); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    canvasFileInputRef.current?.click();
+                  }}
                   style={s.browseBtn}
                 >
                   Browse files
                 </button>
+
                 <input
                   ref={canvasFileInputRef}
-                  type="file" accept="image/*" multiple hidden
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
                   onChange={handleCanvasFileChange}
                 />
               </div>
             )}
 
-            {/* "Add more" button when canvas has items */}
             {canvasItems.length > 0 && (
               <button
-                onClick={(e) => { e.stopPropagation(); canvasFileInputRef.current?.click(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  canvasFileInputRef.current?.click();
+                }}
                 style={s.addMoreBtn}
                 title="Add image from folder"
               >
                 <ImagePlus size={14} style={{ marginRight: 4 }} />
                 Add image
+
                 <input
                   ref={canvasFileInputRef}
-                  type="file" accept="image/*" multiple hidden
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
                   onChange={handleCanvasFileChange}
                 />
               </button>
@@ -326,7 +448,8 @@ export default function CreateTemplatePage() {
 
             {canvasItems.map((item) => (
               <CanvasItem
-                key={item.id} item={item}
+                key={item.id}
+                item={item}
                 isSelected={selectedId === item.id}
                 onSelect={setSelectedId}
                 onChange={updateItem}
@@ -335,247 +458,384 @@ export default function CreateTemplatePage() {
             ))}
           </div>
 
-          {/* INSPIRATION IMAGE */}
           <div style={s.card}>
             <p style={s.cardTitle}>Upload Inspiration Image</p>
+
             <label
               style={s.uploadArea}
               onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => { e.preventDefault(); handleInspirationFile(e.dataTransfer.files?.[0]); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleInspirationFile(e.dataTransfer.files?.[0]);
+              }}
             >
               <Upload size={22} color="#aaa" />
               <span style={s.uploadText}>Click or drag to upload</span>
-              <input type="file" accept="image/*" hidden
-                onChange={(e) => handleInspirationFile(e.target.files[0])} />
+
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => handleInspirationFile(e.target.files[0])}
+              />
             </label>
+
             {inspirationImage && (
-              <img src={inspirationImage} alt="Inspiration" style={s.inspirationPreview} />
+              <img
+                src={inspirationImage}
+                alt="Inspiration"
+                style={s.inspirationPreview}
+              />
             )}
           </div>
         </div>
 
-        {/* ── RIGHT COLUMN ── */}
         <div style={s.right}>
-
-          {/* TEMPLATE DETAILS */}
           <div style={s.card}>
             <p style={s.cardTitle}>Template Details</p>
 
             <label style={s.label}>Title</label>
             <input
-              placeholder="Template name" value={title}
-              onChange={(e) => setTitle(e.target.value)} style={s.input}
+              placeholder="Template name"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={s.input}
             />
 
             <label style={s.label}>Description</label>
             <textarea
-              placeholder="Describe this look..." value={description}
-              onChange={(e) => setDescription(e.target.value)} style={s.textarea}
+              placeholder="Describe this look..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              style={s.textarea}
             />
 
             <label style={s.label}>Occasion</label>
             <div style={s.selectWrap}>
-              <select value={occasion} onChange={(e) => setOccasion(e.target.value)} style={s.select}>
+              <select
+                value={occasion}
+                onChange={(e) => setOccasion(e.target.value)}
+                style={s.select}
+              >
                 <option value="">Select</option>
-                <option value="casual">Casual</option>
-                <option value="formal">Formal</option>
-                <option value="sport">Sport</option>
-                <option value="party">Party</option>
-                <option value="work">Work</option>
+                <option value="Casual">Casual</option>
+                <option value="Formal">Formal</option>
+                <option value="Sport">Sport</option>
+                <option value="Party">Party</option>
+                <option value="Work">Work</option>
               </select>
+
               <ChevronDown size={15} style={s.chevron} />
             </div>
           </div>
 
-        {/* CLOTHING ITEMS */}
-<div style={s.card}>
-  <p style={s.cardTitle}>Clothing Items</p>
+          <div style={s.card}>
+            <p style={s.cardTitle}>Clothing Items</p>
 
-  {/* ✅ CATEGORY DROPDOWN (ALWAYS VISIBLE) */}
-  <div style={s.selectWrap}>
-    <select
-      value={selectedCategory}
-      onChange={(e) => setSelectedCategory(e.target.value)}
-      style={s.select}
-    >
-      <option value="">All Categories</option>
-      <option value="Tops">Tops</option>
-      <option value="Bottoms">Bottoms</option>
-      <option value="Shoes">Shoes</option>
-      <option value="Accessories">Accessories</option>
-      <option value="Dresses & Jumpsuits">Dresses & Jumpsuits</option>
-      <option value="Outerwear">Outerwear</option>
-      <option value="Bags">Bags</option>
-      <option value="Activewear">Activewear</option>
-    </select>
-  </div>
-
-  {/* ✅ FILTER ITEMS */}
-  {(() => {
-    const filteredItems = selectedCategory
-      ? items.filter((item) => item.category === selectedCategory)
-      : items;
-
-    return (
-      <>
-        {/* ❌ EMPTY STATE */}
-        {filteredItems.length === 0 && (
-          <div style={s.emptyItems}>
-            <p style={s.emptyText}>No items in this category.</p>
-            <p style={s.emptySubText}>
-              Add items in <strong>My Wardrobe</strong>
-            </p>
-          </div>
-        )}
-
-        {/* ✅ GRID */}
-        {filteredItems.length > 0 && (
-          <div style={s.grid}>
-            {filteredItems.map((item) => (
-              <div
-                key={item.item_id}
-                onPointerDown={(e) =>
-                  handleSidebarPointerDown(e, item)
-                }
-                style={s.gridItem}
-                title="Click or drag to canvas"
+            <div style={s.selectWrap}>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                style={s.select}
               >
-                <img
-                  src={`http://localhost:5000${item.image_url}`}
-                  alt=""
-                  draggable={false}
-                  style={s.gridImg}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </>
-    );
-  })()}
-</div>
+                <option value="">All Categories</option>
+                <option value="Tops">Tops</option>
+                <option value="Bottoms">Bottoms</option>
+                <option value="Shoes">Shoes</option>
+                <option value="Accessories">Accessories</option>
+                <option value="Dresses & Jumpsuits">Dresses & Jumpsuits</option>
+                <option value="Outerwear">Outerwear</option>
+                <option value="Bags">Bags</option>
+                <option value="Activewear">Activewear</option>
+              </select>
 
+              <ChevronDown size={15} style={s.chevron} />
+            </div>
+
+            {(() => {
+              const filteredItems = selectedCategory
+                ? items.filter((item) => item.category === selectedCategory)
+                : items;
+
+              return (
+                <>
+                  {filteredItems.length === 0 && (
+                    <div style={s.emptyItems}>
+                      <p style={s.emptyText}>No items in this category.</p>
+                      <p style={s.emptySubText}>
+                        Add items in <strong>My Wardrobe</strong>
+                      </p>
+                    </div>
+                  )}
+
+                  {filteredItems.length > 0 && (
+                    <div style={s.grid}>
+                      {filteredItems.map((item) => (
+                        <div
+                          key={item.item_id}
+                          onPointerDown={(e) => handleSidebarPointerDown(e, item)}
+                          style={s.gridItem}
+                          title="Click or drag to canvas"
+                        >
+                          <img
+                            src={`http://localhost:5000${item.image_url}`}
+                            alt=""
+                            draggable={false}
+                            style={s.gridImg}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─────────── STYLES ─────────── */
 const s = {
   page: {
-    minHeight: "calc(100vh - 80px)", background: "#FDF5EE",
-    padding: "28px 32px", fontFamily: "'DM Sans', sans-serif",
-    display: "flex", flexDirection: "column", gap: 20, boxSizing: "border-box",
+    minHeight: "calc(100vh - 80px)",
+    background: "#FDF5EE",
+    padding: "28px 32px",
+    fontFamily: "'DM Sans', sans-serif",
+    display: "flex",
+    flexDirection: "column",
+    gap: 20,
+    boxSizing: "border-box",
   },
-  header: { display: "flex", alignItems: "center", justifyContent: "space-between" },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   heading: {
-    fontSize: 28, fontWeight: 700, fontFamily: "'Georgia', serif",
-    color: "#1a1a1a", margin: 0,
+    fontSize: 28,
+    fontWeight: 700,
+    fontFamily: "'Georgia', serif",
+    color: "#1a1a1a",
+    margin: 0,
   },
   publishBtn: {
-    display: "flex", alignItems: "center",
-    background: "#7CB98B", color: "#fff", border: "none",
-    borderRadius: 10, padding: "10px 20px",
-    fontSize: 14, fontWeight: 600, cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    background: "#7CB98B",
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    padding: "10px 20px",
+    fontSize: 14,
+    fontWeight: 600,
   },
-  body:  { display: "flex", gap: 20, flex: 1 },
-  left:  { flex: 1, display: "flex", flexDirection: "column", gap: 16 },
-  right: { width: 260, display: "flex", flexDirection: "column", gap: 16 },
-
+  body: {
+    display: "flex",
+    gap: 20,
+    flex: 1,
+  },
+  left: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+  },
+  right: {
+    width: 260,
+    display: "flex",
+    flexDirection: "column",
+    gap: 16,
+  },
   canvas: {
-    flex: 1, minHeight: 340,
-    border: "1.5px dashed #d6c9bc", borderRadius: 16,
-    position: "relative", overflow: "hidden",
+    flex: 1,
+    minHeight: 340,
+    border: "1.5px dashed #d6c9bc",
+    borderRadius: 16,
+    position: "relative",
+    overflow: "hidden",
     transition: "border-color 0.2s, background 0.2s",
   },
   canvasEmpty: {
-    position: "absolute", inset: 0,
-    display: "flex", flexDirection: "column",
-    alignItems: "center", justifyContent: "center", gap: 10,
+    position: "absolute",
+    inset: 0,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
     pointerEvents: "none",
   },
   canvasHint: {
-    color: "#bbb", fontSize: 13, margin: 0, userSelect: "none",
+    color: "#bbb",
+    fontSize: 13,
+    margin: 0,
+    userSelect: "none",
   },
   browseBtn: {
     pointerEvents: "all",
-    background: "#f0ebe5", border: "1px solid #ddd",
-    borderRadius: 8, padding: "6px 16px",
-    fontSize: 12, color: "#666", cursor: "pointer",
+    background: "#f0ebe5",
+    border: "1px solid #ddd",
+    borderRadius: 8,
+    padding: "6px 16px",
+    fontSize: 12,
+    color: "#666",
+    cursor: "pointer",
     marginTop: 4,
   },
   addMoreBtn: {
-    position: "absolute", bottom: 12, right: 12, zIndex: 20,
-    display: "flex", alignItems: "center",
-    background: "rgba(255,255,255,0.9)", border: "1px solid #ddd",
-    borderRadius: 8, padding: "5px 12px",
-    fontSize: 12, color: "#555", cursor: "pointer",
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    zIndex: 20,
+    display: "flex",
+    alignItems: "center",
+    background: "rgba(255,255,255,0.9)",
+    border: "1px solid #ddd",
+    borderRadius: 8,
+    padding: "5px 12px",
+    fontSize: 12,
+    color: "#555",
+    cursor: "pointer",
     boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
   },
-
   card: {
-    background: "#fff", border: "1.5px solid #ede4d9",
-    borderRadius: 14, padding: "16px 18px",
-    display: "flex", flexDirection: "column", gap: 10,
+    background: "#fff",
+    border: "1.5px solid #ede4d9",
+    borderRadius: 14,
+    padding: "16px 18px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
   },
-  cardTitle: { fontSize: 14, fontWeight: 700, color: "#1a1a1a", margin: 0 },
-  label:     { fontSize: 12, fontWeight: 600, color: "#555", marginBottom: -4 },
-
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: "#1a1a1a",
+    margin: 0,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#555",
+    marginBottom: -4,
+  },
   input: {
-    border: "1.5px solid #e2d9d0", borderRadius: 8,
-    padding: "9px 12px", fontSize: 13, color: "#333",
-    outline: "none", background: "#fdf9f6",
-    width: "100%", boxSizing: "border-box",
+    border: "1.5px solid #e2d9d0",
+    borderRadius: 8,
+    padding: "9px 12px",
+    fontSize: 13,
+    color: "#333",
+    outline: "none",
+    background: "#fdf9f6",
+    width: "100%",
+    boxSizing: "border-box",
   },
   textarea: {
-    border: "1.5px solid #e2d9d0", borderRadius: 8,
-    padding: "9px 12px", fontSize: 13, color: "#333",
-    outline: "none", background: "#fdf9f6",
-    resize: "vertical", minHeight: 72,
-    width: "100%", boxSizing: "border-box", fontFamily: "inherit",
+    border: "1.5px solid #e2d9d0",
+    borderRadius: 8,
+    padding: "9px 12px",
+    fontSize: 13,
+    color: "#333",
+    outline: "none",
+    background: "#fdf9f6",
+    resize: "vertical",
+    minHeight: 72,
+    width: "100%",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
   },
-  selectWrap: { position: "relative" },
+  selectWrap: {
+    position: "relative",
+  },
   select: {
-    width: "100%", border: "1.5px solid #e2d9d0", borderRadius: 8,
-    padding: "9px 32px 9px 12px", fontSize: 13, color: "#555",
-    background: "#fdf9f6", appearance: "none", outline: "none",
-    cursor: "pointer", boxSizing: "border-box",
+    width: "100%",
+    border: "1.5px solid #e2d9d0",
+    borderRadius: 8,
+    padding: "9px 32px 9px 12px",
+    fontSize: 13,
+    color: "#555",
+    background: "#fdf9f6",
+    appearance: "none",
+    outline: "none",
+    cursor: "pointer",
+    boxSizing: "border-box",
   },
   chevron: {
-    position: "absolute", right: 10, top: "50%",
-    transform: "translateY(-50%)", color: "#888", pointerEvents: "none",
+    position: "absolute",
+    right: 10,
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "#888",
+    pointerEvents: "none",
   },
-
   uploadArea: {
-    display: "flex", flexDirection: "column",
-    alignItems: "center", justifyContent: "center", gap: 8,
-    border: "1.5px dashed #ccc", borderRadius: 10,
-    padding: "28px 16px", cursor: "pointer", background: "#fafafa",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    border: "1.5px dashed #ccc",
+    borderRadius: 10,
+    padding: "28px 16px",
+    cursor: "pointer",
+    background: "#fafafa",
   },
-  uploadText: { fontSize: 13, color: "#aaa" },
+  uploadText: {
+    fontSize: 13,
+    color: "#aaa",
+  },
   inspirationPreview: {
-    display: "block", maxHeight: 120, maxWidth: "100%",
-    margin: "8px auto 0", objectFit: "contain", borderRadius: 8,
+    display: "block",
+    maxHeight: 120,
+    maxWidth: "100%",
+    margin: "8px auto 0",
+    objectFit: "contain",
+    borderRadius: 8,
   },
-
   emptyItems: {
-    textAlign: "center", padding: "12px 8px",
-    background: "#fdf9f6", borderRadius: 8,
+    textAlign: "center",
+    padding: "12px 8px",
+    background: "#fdf9f6",
+    borderRadius: 8,
     border: "1px dashed #e0d5c8",
   },
-  emptyText:    { fontSize: 13, color: "#999", margin: "0 0 4px 0", fontWeight: 600 },
-  emptySubText: { fontSize: 11, color: "#bbb", margin: 0, lineHeight: 1.5 },
-
+  emptyText: {
+    fontSize: 13,
+    color: "#999",
+    margin: "0 0 4px 0",
+    fontWeight: 600,
+  },
+  emptySubText: {
+    fontSize: 11,
+    color: "#bbb",
+    margin: 0,
+    lineHeight: 1.5,
+  },
   grid: {
-    display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
-    gap: 8, maxHeight: 260, overflowY: "auto", marginTop: 2,
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: 8,
+    maxHeight: 260,
+    overflowY: "auto",
+    marginTop: 2,
   },
   gridItem: {
-    background: "#f7f2ed", borderRadius: 8, padding: 6,
-    cursor: "grab", display: "flex",
-    alignItems: "center", justifyContent: "center",
-    userSelect: "none", touchAction: "none",
+    background: "#f7f2ed",
+    borderRadius: 8,
+    padding: 6,
+    cursor: "grab",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    userSelect: "none",
+    touchAction: "none",
   },
-  gridImg: { height: 70, width: "100%", objectFit: "contain", pointerEvents: "none" },
+  gridImg: {
+    height: 70,
+    width: "100%",
+    objectFit: "contain",
+    pointerEvents: "none",
+  },
 };
