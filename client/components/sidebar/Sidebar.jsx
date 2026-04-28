@@ -37,7 +37,7 @@ export default function Sidebar({ role }) {
       { label: "My Profile", href: "/stylist/profile", icon: Users },
       { label: "My Wardrobe", href: "/stylist/wardrobe", icon: Shirt },
       { label: "Add Item", href: "/stylist/item", icon: PlusCircle },
-      { label: "Create Template", href: "/stylist/create", icon: PlusCircle },
+      { label: "Create Template",href: "/stylist/createtemplate", icon: PlusCircle },
       { label: "My Templates", href: "/stylist/templates", icon: LayoutGrid },
     ],
 

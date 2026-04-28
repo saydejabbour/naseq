@@ -1,18 +1,23 @@
 import express from "express";
-import { register, login, forgotPassword, verifyEmail } from "../controllers/authController.js";
+import {
+  register,
+  login,
+  forgotPassword,
+  verifyEmail,
+} from "../controllers/authController.js";
+
+// 🔥 IMPORT YOUR NEW FUNCTION
+import { createTemplate } from "../controllers/stylistController.js";
 
 const router = express.Router();
 
-// ✅ REGISTER
+// ✅ AUTH ROUTES
 router.post("/register", register);
-
-// ✅ LOGIN
 router.post("/login", login);
-
-// ✅ FORGOT PASSWORD
 router.post("/forgot-password", forgotPassword);
-
-// 🔥 VERIFY EMAIL (NEW)
 router.get("/verify/:token", verifyEmail);
+
+// 🔥 ADD THIS (VERY IMPORTANT)
+router.post("/stylist/templates", createTemplate);
 
 export default router;

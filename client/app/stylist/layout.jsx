@@ -5,6 +5,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+// ✅ ADD THIS
+import { ToastProvider } from "@/context/ToastContext";
+
 export default function StylistLayout({ children }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
@@ -13,9 +16,9 @@ export default function StylistLayout({ children }) {
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
-        router.push("/login"); // ❌ not logged in
+        router.push("/login");
       } else if (user.role !== "stylist") {
-        router.push("/"); // ❌ wrong role
+        router.push("/");
       }
     }
   }, [user, isLoading]);
@@ -32,18 +35,20 @@ export default function StylistLayout({ children }) {
   // 🔥 BLOCK RENDER
   if (!user || user.role !== "stylist") return null;
 
-  // ✅ NORMAL UI (YOUR ORIGINAL DESIGN)
+  // ✅ WRAP WITH TOAST PROVIDER
   return (
-    <div className="flex min-h-screen bg-[#FDF8F3]">
+    <ToastProvider>
+      <div className="flex min-h-screen bg-[#FDF8F3]">
 
-      {/* Sidebar */}
-      <Sidebar role="stylist" />
+        {/* Sidebar */}
+        <Sidebar role="stylist" />
 
-      {/* Content */}
-      <main className="flex-1 p-10">
-        {children}
-      </main>
+        {/* Content */}
+        <main className="flex-1 p-10">
+          {children}
+        </main>
 
-    </div>
+      </div>
+    </ToastProvider>
   );
 }

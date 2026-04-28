@@ -4,7 +4,7 @@ import db from "../config/db.js";
 
 const router = express.Router();
 
-// STORAGE
+/* ================= STORAGE ================= */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -16,6 +16,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+/* ================= APPLY ================= */
 router.post(
   "/apply",
   upload.fields([
@@ -24,11 +25,7 @@ router.post(
   ]),
   (req, res) => {
     try {
-      console.log("BODY:", req.body);
-      console.log("FILES:", req.files);
-
       const { full_name, email, bio, user_id } = req.body;
-
       const profileImage = req.files["profileImage"]?.[0]?.filename;
 
       const query = `
@@ -42,7 +39,7 @@ router.post(
         [full_name, email, bio, profileImage, user_id],
         (err, result) => {
           if (err) {
-            console.error("DB ERROR:", err);
+            console.error(err);
             return res.status(500).json({
               success: false,
               message: "Database error",
@@ -69,7 +66,6 @@ router.post(
           });
         }
       );
-
     } catch (err) {
       console.error(err);
       res.status(500).json({
@@ -80,4 +76,84 @@ router.post(
   }
 );
 
+/* ================= CREATE TEMPLATE ================= */
+router.post(
+  "/templates",
+  upload.single("inspiration_image"),
+  async (req, res) => {
+    try {
+      const {
+        stylist_id,
+        title,
+        description,
+        occasion,
+        items,
+      } = req.body;
+
+      const imageFile = req.file?.filename;
+
+      if (!stylist_id || !title) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields",
+        });
+      }
+
+      /* 1️⃣ INSERT TEMPLATE */
+      const [result] = await db.promise().query(
+        `INSERT INTO stylist_templates 
+         (stylist_id, title, description, occasion, image_url)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          stylist_id,
+          title,
+          description || null,
+          occasion || null,
+          imageFile ? `/uploads/${imageFile}` : null,
+        ]
+      );
+
+      const templateId = result.insertId;
+
+      /* 2️⃣ INSERT ITEMS */
+      let parsedItems = [];
+
+      try {
+        parsedItems = JSON.parse(items);
+      } catch {
+        parsedItems = [];
+      }
+
+      if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+        const values = parsedItems
+          .map((item) => {
+            const itemId = item.item_id || item.itemId;
+            return itemId ? [templateId, itemId] : null;
+          })
+          .filter(Boolean);
+
+        if (values.length > 0) {
+          await db.promise().query(
+            `INSERT INTO stylist_template_items (template_id, item_id) VALUES ?`,
+            [values]
+          );
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: "Template saved",
+      });
+
+    } catch (err) {
+      console.error("TEMPLATE ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Template save failed",
+      });
+    }
+  }
+);
+
+/* 🔥 THIS LINE WAS YOUR PROBLEM */
 export default router;
