@@ -151,7 +151,15 @@ export default function OutfitBuilderPage() {
 
     fetch(`http://localhost:5000/api/clothing/user/${user.user_id}`)
       .then((res) => res.json())
-      .then((data) => setItems(data.items || []));
+      .then((data) => {
+  const itemsArray = Array.isArray(data.items)
+    ? data.items
+    : Array.isArray(data.data)
+    ? data.data
+    : [];
+
+  setItems(itemsArray);
+});
   }, [user]);
 
   const filteredItems = items.filter((item) => {

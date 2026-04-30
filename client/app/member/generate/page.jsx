@@ -645,9 +645,15 @@ export default function GeneratePage() {
         const res  = await fetch(`http://localhost:5000/api/clothing/user/${user.user_id}`);
         const data = await res.json();
         if (data.success) {
-          const found = data.items.find(
-            (item) => String(item.item_id) === String(itemId)
-          );
+          const itemsArray = Array.isArray(data.items)
+  ? data.items
+  : Array.isArray(data.data)
+  ? data.data
+  : [];
+
+const found = itemsArray.find(
+  (item) => String(item.item_id) === String(itemId)
+);
           if (found) setSelectedItem(found);
         }
       } catch (err) {

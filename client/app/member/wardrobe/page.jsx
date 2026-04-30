@@ -46,7 +46,7 @@ export default function WardrobePage() {
         const data = await res.json();
 
         if (data.success) {
-          setItems(data.items);
+          setItems(Array.isArray(data.data) ? data.data : []);
         }
       } catch (err) {
         console.error(err);
