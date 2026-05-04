@@ -1,6 +1,7 @@
 "use client";
 
 import SaveButton from "./SaveButton";
+import Link from "next/link";
 
 export default function OutfitDetailsUI({
   outfit,
@@ -50,15 +51,46 @@ export default function OutfitDetailsUI({
       <div className="relative z-10 max-w-[1100px] mx-auto mt-12 px-10 flex gap-[72px]">
 
         {/* IMAGE */}
-        <div className="relative basis-[440px] shrink-0">
-          <div className="rounded-[4px_24px_4px_24px] overflow-hidden bg-white shadow-[0_24px_64px_rgba(40,60,40,0.14)]">
-            <img
-              src={`${process.env.NEXT_PUBLIC_API_URL}${outfit.image_url}`}
-              alt={outfit.title}
-              className="w-full h-[560px] object-contain bg-white"
-            />
-          </div>
-        </div>
+        {/* IMAGE */}
+<div className="relative basis-[440px] shrink-0">
+  <div className="relative rounded-[4px_24px_4px_24px] overflow-hidden bg-white shadow-[0_24px_64px_rgba(40,60,40,0.14)]">
+    
+    <img
+      src={`${process.env.NEXT_PUBLIC_API_URL}${outfit.image_url}`}
+      alt={outfit.title}
+      className="w-full h-[560px] object-contain bg-white"
+    />
+
+  {/* STYLIST BADGE */}
+{outfit.stylist && outfit.stylist_id && (
+  <Link
+    href={`/stylist-profile/${outfit.stylist_id}`}
+    className="
+      absolute bottom-4 right-4
+      flex items-center gap-3
+      bg-white/95 border border-green-100
+      rounded-2xl px-4 py-3
+      shadow-[0_8px_24px_rgba(40,60,40,0.14)]
+      hover:bg-green-50 transition
+    "
+  >
+    <div className="h-9 w-9 rounded-full bg-[#DDF2DF] text-[#1f3b25] flex items-center justify-center text-sm font-semibold">
+      {outfit.stylist?.[0]?.toUpperCase() || "S"}
+    </div>
+
+    <div className="leading-tight">
+      <p className="text-[10px] uppercase tracking-wide text-gray-400">
+        Curated by
+      </p>
+      <p className="text-sm font-medium text-[#1f3b25]">
+        {outfit.stylist}
+      </p>
+    </div>
+  </Link>
+)}
+
+  </div>
+</div>
 
         {/* RIGHT SIDE */}
         <div className="flex-1 pt-3 flex flex-col">

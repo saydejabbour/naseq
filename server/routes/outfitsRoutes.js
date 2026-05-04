@@ -18,8 +18,9 @@ router.get("/", (req, res) => {
       st.style,
       st.season,
       st.occasion,
-      st.image_url,
-      u.full_name AS stylist
+     st.image_url,
+st.stylist_id AS stylist_id,
+u.full_name AS stylist
     FROM stylist_templates st
     JOIN stylist_profiles sp ON st.stylist_id = sp.stylist_id
     JOIN users u ON sp.user_id = u.user_id
@@ -82,7 +83,8 @@ router.get("/template/:id", (req, res) => {
       st.season,
       st.occasion,
       st.image_url,
-      u.full_name AS stylist
+st.stylist_id AS stylist_id,
+u.full_name AS stylist
     FROM stylist_templates st
     JOIN stylist_profiles sp ON st.stylist_id = sp.stylist_id
     JOIN users u ON sp.user_id = u.user_id

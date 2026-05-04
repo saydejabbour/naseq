@@ -23,6 +23,7 @@ export default function OutfitDetailsPage() {
         const res = await apiRequest(`/outfits/template/${id}`);
 
         if (res.success) {
+           console.log("OUTFIT DETAILS DATA:", res.data);
           setOutfit(res.data);
         } else {
           setOutfit(null);
@@ -65,6 +66,7 @@ export default function OutfitDetailsPage() {
       const res = await saveTemplate(user.user_id, outfit.id);
 
       if (res.success || res.message === "Already saved") {
+        
         setSaved(true);
       }
     }

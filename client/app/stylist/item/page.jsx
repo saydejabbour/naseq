@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useAuth } from "@/context/AuthContext"; // ✅ IMPORTANT
+import { useAuth } from "@/context/AuthContext";
 
 const CATEGORIES = [
   { id: 1, name: "Tops" },
@@ -15,8 +15,7 @@ const CATEGORIES = [
 ];
 
 export default function StylistAddItem() {
-  const { user } = useAuth(); // ✅ GET USER
-
+  const { user } = useAuth();
   const fileInputRef = useRef(null);
 
   const [preview, setPreview] = useState(null);
@@ -24,10 +23,17 @@ export default function StylistAddItem() {
   const [category, setCategory] = useState("");
   const [dragOver, setDragOver] = useState(false);
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+
   const handleFile = (f) => {
     if (!f || !f.type.startsWith("image/")) return;
+
     setFile(f);
     setPreview(URL.createObjectURL(f));
+    setError("");
+    setSuccess(false);
   };
 
   const onDrop = (e) => {
@@ -36,24 +42,22 @@ export default function StylistAddItem() {
     handleFile(e.dataTransfer.files[0]);
   };
 
-  /* ================= SAVE ITEM ================= */
   const handleSubmit = async () => {
+    setError("");
+    setSuccess(false);
+
+    if (!file) return setError("Please upload an image.");
+    if (!category) return setError("Please select a category.");
+    if (!user?.user_id && !user?.id) return setError("User not found. Please login again.");
+
+    setLoading(true);
+
     try {
-      if (!file) {
-        alert("Please upload an image");
-        return;
-      }
-
-      if (!category) {
-        alert("Please select a category");
-        return;
-      }
-
       const formData = new FormData();
 
       formData.append("image", file);
       formData.append("category_id", category);
-      formData.append("user_id", user.user_id); // ✅ VERY IMPORTANT
+      formData.append("user_id", user?.user_id || user?.id);
 
       const res = await fetch("http://127.0.0.1:5000/api/clothing/add", {
         method: "POST",
@@ -64,27 +68,25 @@ export default function StylistAddItem() {
 
       console.log("UPLOAD RESPONSE:", data);
 
-      if (data.success) {
-        alert("Item saved successfully!");
-
-        // reset
-        setPreview(null);
-        setFile(null);
-        setCategory("");
-      } else {
-        alert(data.message || "Upload failed");
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Upload failed");
       }
 
+      setSuccess(true);
+
+      setPreview(null);
+      setFile(null);
+      setCategory("");
     } catch (err) {
       console.error("UPLOAD ERROR:", err);
-      alert("Something went wrong");
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] px-10 py-10">
-
-      {/* HEADER */}
       <h1 className="text-3xl font-serif text-[#1a2e1a] mb-2">
         Add Clothing Item
       </h1>
@@ -94,15 +96,16 @@ export default function StylistAddItem() {
       </p>
 
       <div className="bg-white rounded-2xl p-8 max-w-2xl border border-[#E8E2D9]">
-
-        {/* IMAGE */}
         <p className="text-sm font-medium mb-3 text-[#1a2e1a]">
           Upload Image
         </p>
 
         <div
-          onClick={() => fileInputRef.current.click()}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
           className={`
@@ -118,7 +121,7 @@ export default function StylistAddItem() {
             <img
               src={preview}
               alt="preview"
-              className="h-full object-contain p-2"
+              className="h-full w-full object-contain rounded-xl p-2"
             />
           ) : (
             <p className="text-sm text-[#A0A0A0]">
@@ -135,12 +138,12 @@ export default function StylistAddItem() {
           />
         </div>
 
-        {/* REMOVE IMAGE */}
         {preview && (
           <button
             onClick={() => {
               setPreview(null);
               setFile(null);
+              setSuccess(false);
             }}
             className="mt-2 text-xs text-red-500 hover:underline"
           >
@@ -148,7 +151,6 @@ export default function StylistAddItem() {
           </button>
         )}
 
-        {/* CATEGORY */}
         <div className="mt-6">
           <p className="text-sm font-medium mb-2 text-[#1a2e1a]">
             Category
@@ -156,8 +158,12 @@ export default function StylistAddItem() {
 
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full bg-[#fdf6ee] border border-[#E5DCD3] rounded-xl px-4 py-3 text-sm"
+            onChange={(e) => {
+              setCategory(e.target.value);
+              setError("");
+              setSuccess(false);
+            }}
+            className="w-full bg-[#fdf6ee] border border-[#E5DCD3] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A962]"
           >
             <option value="">Select Category</option>
             {CATEGORIES.map((c) => (
@@ -168,14 +174,25 @@ export default function StylistAddItem() {
           </select>
         </div>
 
-        {/* BUTTON */}
-        <button
-          onClick={handleSubmit} // ✅ THIS WAS MISSING
-          className="mt-8 w-full bg-[#7CB98B] hover:bg-[#6aa879] text-white py-3 rounded-xl font-medium transition"
-        >
-          Save Item
-        </button>
+        {error && (
+          <p className="mt-5 text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+            {error}
+          </p>
+        )}
 
+        {success && (
+          <p className="mt-5 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2">
+            ✓ Item added successfully!
+          </p>
+        )}
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="mt-8 w-full bg-[#7CB98B] hover:bg-[#6aa879] text-white py-3 rounded-xl font-medium transition disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {loading ? "Saving…" : "Save Item"}
+        </button>
       </div>
     </div>
   );

@@ -119,7 +119,8 @@ export default function CreateTemplatePage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [occasion, setOccasion] = useState("");
+ const [style, setStyle] = useState("");
+const [season, setSeason] = useState("");
   const [inspirationImage, setInspirationImage] = useState(null);
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -310,12 +311,12 @@ export default function CreateTemplatePage() {
 
     const realWardrobeItems = canvasItems.filter((item) => item.item_id);
 
-    if (realWardrobeItems.length === 0) {
-      return showToast(
-        "Please drag at least one clothing item from the right sidebar.",
-        "error"
-      );
-    }
+if (realWardrobeItems.length === 0 && !inspirationImage) {
+  return showToast(
+    "Please add clothing items to the canvas or upload an inspiration image.",
+    "error"
+  );
+}
 
     try {
       setPublishing(true);
@@ -327,13 +328,15 @@ export default function CreateTemplatePage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          stylist_id: user.user_id,
-          title: title.trim(),
-          description,
-          occasion,
-          items: realWardrobeItems,
-        }),
+       body: JSON.stringify({
+  stylist_id: user.user_id,
+  title: title.trim(),
+  description,
+  style,
+season,
+  inspiration_image: inspirationImage,
+  items: realWardrobeItems,
+}),
       });
 
       const data = await res.json();
@@ -348,7 +351,8 @@ export default function CreateTemplatePage() {
 
       setTitle("");
       setDescription("");
-      setOccasion("");
+      setStyle("");
+      setSeason("");
       setInspirationImage(null);
       setCanvasItems([]);
       setSelectedId(null);
@@ -458,36 +462,48 @@ export default function CreateTemplatePage() {
             ))}
           </div>
 
+        
           <div style={s.card}>
-            <p style={s.cardTitle}>Upload Inspiration Image</p>
+  <p style={s.cardTitle}>Upload Inspiration Image</p>
 
-            <label
-              style={s.uploadArea}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                handleInspirationFile(e.dataTransfer.files?.[0]);
-              }}
-            >
-              <Upload size={22} color="#aaa" />
-              <span style={s.uploadText}>Click or drag to upload</span>
+  <label
+    style={s.uploadArea}
+    onDragOver={(e) => e.preventDefault()}
+    onDrop={(e) => {
+      e.preventDefault();
+      handleInspirationFile(e.dataTransfer.files?.[0]);
+    }}
+  >
+    {inspirationImage ? (
+      <img
+        src={inspirationImage}
+        alt="Inspiration"
+        style={s.inspirationPreviewInside}
+      />
+    ) : (
+      <>
+        <Upload size={22} color="#aaa" />
+        <span style={s.uploadText}>Click or drag to upload</span>
+      </>
+    )}
 
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => handleInspirationFile(e.target.files[0])}
-              />
-            </label>
+    <input
+      type="file"
+      accept="image/*"
+      hidden
+      onChange={(e) => handleInspirationFile(e.target.files[0])}
+    />
+  </label>
 
-            {inspirationImage && (
-              <img
-                src={inspirationImage}
-                alt="Inspiration"
-                style={s.inspirationPreview}
-              />
-            )}
-          </div>
+  {inspirationImage && (
+    <button
+      onClick={() => setInspirationImage(null)}
+      style={s.removeInspirationBtn}
+    >
+      Remove inspiration image
+    </button>
+  )}
+</div>
         </div>
 
         <div style={s.right}>
@@ -510,23 +526,40 @@ export default function CreateTemplatePage() {
               style={s.textarea}
             />
 
-            <label style={s.label}>Occasion</label>
-            <div style={s.selectWrap}>
-              <select
-                value={occasion}
-                onChange={(e) => setOccasion(e.target.value)}
-                style={s.select}
-              >
-                <option value="">Select</option>
-                <option value="Casual">Casual</option>
-                <option value="Formal">Formal</option>
-                <option value="Sport">Sport</option>
-                <option value="Party">Party</option>
-                <option value="Work">Work</option>
-              </select>
+            <label style={s.label}>Style</label>
+<div style={s.selectWrap}>
+  <select
+    value={style}
+    onChange={(e) => setStyle(e.target.value)}
+    style={s.select}
+  >
+    <option value="">Select Style</option>
+    <option value="Casual">Casual</option>
+    <option value="Elegant">Elegant</option>
+    <option value="Streetwear">Streetwear</option>
+    <option value="Formal">Formal</option>
+    <option value="Sporty">Sporty</option>
+    <option value="Minimalist">Minimalist</option>
+  </select>
+  <ChevronDown size={15} style={s.chevron} />
+</div>
 
-              <ChevronDown size={15} style={s.chevron} />
-            </div>
+<label style={s.label}>Season</label>
+<div style={s.selectWrap}>
+  <select
+    value={season}
+    onChange={(e) => setSeason(e.target.value)}
+    style={s.select}
+  >
+    <option value="">Select Season</option>
+    <option value="Spring">Spring</option>
+    <option value="Summer">Summer</option>
+    <option value="Autumn">Autumn</option>
+    <option value="Winter">Winter</option>
+    <option value="All Season">All Season</option>
+  </select>
+  <ChevronDown size={15} style={s.chevron} />
+</div>
           </div>
 
           <div style={s.card}>
@@ -786,14 +819,24 @@ const s = {
     fontSize: 13,
     color: "#aaa",
   },
-  inspirationPreview: {
-    display: "block",
-    maxHeight: 120,
-    maxWidth: "100%",
-    margin: "8px auto 0",
-    objectFit: "contain",
-    borderRadius: 8,
-  },
+  inspirationPreviewInside: {
+  width: "100%",
+  height: "100%",
+  maxHeight: 130,
+  objectFit: "contain",
+  borderRadius: 8,
+},
+
+removeInspirationBtn: {
+  background: "transparent",
+  border: "none",
+  color: "#c0392b",
+  fontSize: 12,
+  cursor: "pointer",
+  alignSelf: "flex-start",
+  padding: 0,
+},
+
   emptyItems: {
     textAlign: "center",
     padding: "12px 8px",
