@@ -21,6 +21,11 @@ export default function WardrobePage() {
   const [items, setItems] = useState([]);
   const [filters, setFilters] = useState({ category: "" });
 
+  const [deleteModal, setDeleteModal] = useState({
+    open: false,
+    itemId: null,
+  });
+
   useEffect(() => {
     const fetchItems = async () => {
       try {
@@ -41,17 +46,23 @@ export default function WardrobePage() {
     if (user?.user_id) fetchItems();
   }, [user]);
 
-  const handleDelete = async (itemId) => {
+  const handleDelete = async () => {
+    if (!deleteModal.itemId) return;
+
     try {
       const res = await fetch(
-        `http://127.0.0.1:5000/api/clothing/${itemId}`,
+        `http://127.0.0.1:5000/api/clothing/${deleteModal.itemId}`,
         { method: "DELETE" }
       );
 
       const data = await res.json();
 
       if (data.success) {
-        setItems((prev) => prev.filter((item) => item.item_id !== itemId));
+        setItems((prev) =>
+          prev.filter((item) => item.item_id !== deleteModal.itemId)
+        );
+
+        setDeleteModal({ open: false, itemId: null });
       } else {
         alert(data.message || "Delete failed");
       }
@@ -69,7 +80,7 @@ export default function WardrobePage() {
   });
 
   return (
-    <div className="p-10 bg-[#FDF8F3] min-h-screen">
+    <div className="relative p-10 bg-[#FDF8F3] min-h-screen">
       <h1 className="text-4xl font-serif text-[#1a2e1a] mb-6">
         My Wardrobe
       </h1>
@@ -95,7 +106,12 @@ export default function WardrobePage() {
           >
             {/* DELETE BUTTON */}
             <button
-              onClick={() => handleDelete(item.item_id)}
+              onClick={() =>
+                setDeleteModal({
+                  open: true,
+                  itemId: item.item_id,
+                })
+              }
               className="
                 absolute top-3 right-3 z-50
                 opacity-0 group-hover:opacity-100
@@ -129,6 +145,80 @@ export default function WardrobePage() {
           No items found.
         </p>
       )}
+
+      {deleteModal.open && (
+   <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+    style={{ background: "rgba(20, 14, 10, 0.62)", backdropFilter: "blur(2px)" }}>
+    <div
+      className="w-full max-w-sm p-7"
+      style={{
+        background: "linear-gradient(160deg, #FFFDF9 0%, #FFF5E9 100%)",
+        borderRadius: "28px",
+        border: "1px solid rgba(245, 185, 120, 0.35)",
+        boxShadow: "0 2px 0 rgba(255,255,255,0.9) inset, 0 24px 60px rgba(47,62,52,0.18)",
+      }}
+    >
+      {/* Icon ring */}
+      <div className="mx-auto mb-4 flex items-center justify-center"
+        style={{
+          width: 56, height: 56, borderRadius: "50%",
+          background: "linear-gradient(145deg, #FFE8CE, #FFD4A8)",
+          border: "1.5px solid rgba(245, 160, 80, 0.3)",
+          boxShadow: "0 2px 8px rgba(245,160,80,0.18)",
+          color: "#D4782A",
+        }}>
+        <Trash2 size={22} strokeWidth={1.8} />
+      </div>
+
+      <h2 className="text-center mb-1.5"
+        style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 600, color: "#2A3328", letterSpacing: "-0.01em" }}>
+        Delete this item?
+      </h2>
+
+      <p className="text-center mb-6"
+        style={{ fontSize: 13.5, color: "#7C6E63", lineHeight: 1.6 }}>
+        This item will be removed<br />from your wardrobe.
+      </p>
+
+      {/* Divider */}
+      <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(210,170,120,0.35), transparent)", marginBottom: 20 }} />
+
+      <div className="flex gap-2.5">
+        <button
+          onClick={() => setDeleteModal({ open: false, itemId: null })}
+          className="flex-1 py-2.5 text-sm font-medium transition-all"
+          style={{
+            borderRadius: 14,
+            background: "rgba(255,255,255,0.7)",
+            border: "1px solid rgba(210,175,130,0.4)",
+            color: "#6B5B4F",
+            backdropFilter: "blur(4px)",
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,245,232,0.95)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.7)"}
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleDelete}
+          className="flex-1 py-2.5 text-sm font-semibold transition-all"
+          style={{
+            borderRadius: 14,
+            background: "linear-gradient(160deg, #F5A040 0%, #E8843A 100%)",
+            border: "1px solid rgba(200,110,40,0.25)",
+            color: "#fff",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 14px rgba(220,120,40,0.28)",
+          }}
+          onMouseEnter={e => e.currentTarget.style.filter = "brightness(1.07)"}
+          onMouseLeave={e => e.currentTarget.style.filter = "brightness(1)"}
+        >
+          Yes, Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
@@ -150,8 +240,18 @@ function SelectField({ label, value, onChange, options, placeholder }) {
           {value || placeholder}
         </span>
 
-        <svg width="16" height="16" viewBox="0 0 24 24" className="text-[#bfae9b]">
-          <path fill="none" stroke="currentColor" strokeWidth="1.8" d="M6 9l6 6 6-6" />
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          className="text-[#bfae9b]"
+        >
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            d="M6 9l6 6 6-6"
+          />
         </svg>
       </div>
 

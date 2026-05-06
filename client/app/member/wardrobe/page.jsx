@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-/* ✅ SAME OPTIONS */
+const API = "http://localhost:5000";
+
 const CATEGORIES = [
   { id: 1, name: "Tops" },
   { id: 2, name: "Bottoms" },
@@ -21,14 +23,11 @@ const COLORS = [
 const STYLES = ["Casual", "Formal", "Sporty", "Elegant", "Streetwear", "Bohemian"];
 const SEASONS = ["Summer", "Winter", "Spring", "Fall", "All Season"];
 
-
 export default function WardrobePage() {
   const { user } = useAuth();
-
-  const [items, setItems] = useState([]);
-
   const router = useRouter();
 
+  const [items, setItems] = useState([]);
   const [filters, setFilters] = useState({
     category: "",
     color: "",
@@ -36,27 +35,53 @@ export default function WardrobePage() {
     season: "",
   });
 
-  // 🔥 FETCH ITEMS
+  const [deleteModal, setDeleteModal] = useState({
+    open: false,
+    itemId: null,
+  });
+
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await fetch(
-          `http://localhost:5000/api/clothing/user/${user.user_id}`
-        );
+        const res = await fetch(`${API}/api/clothing/user/${user.user_id}`);
         const data = await res.json();
 
         if (data.success) {
           setItems(Array.isArray(data.data) ? data.data : []);
         }
       } catch (err) {
-        console.error(err);
+        console.error("FETCH ERROR:", err);
       }
     };
 
-    if (user) fetchItems();
+    if (user?.user_id) fetchItems();
   }, [user]);
 
-  // 🔥 FILTER (NO LOOP)
+  const handleDelete = async () => {
+    if (!deleteModal.itemId) return;
+
+    try {
+      const res = await fetch(`${API}/api/clothing/${deleteModal.itemId}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setItems((prev) =>
+          prev.filter((item) => item.item_id !== deleteModal.itemId)
+        );
+
+        setDeleteModal({ open: false, itemId: null });
+      } else {
+        alert(data.message || "Delete failed");
+      }
+    } catch (err) {
+      console.error("DELETE ERROR:", err);
+      alert("Server error while deleting item");
+    }
+  };
+
   const filtered = items.filter((item) => {
     return (
       (!filters.category || item.category_name === filters.category) &&
@@ -72,15 +97,11 @@ export default function WardrobePage() {
 
   return (
     <div className="p-10 bg-[#FDF8F3] min-h-screen">
-
-      {/* TITLE */}
       <h1 className="text-4xl font-serif text-[#1a2e1a] mb-6">
         My Wardrobe
       </h1>
 
-      {/* FILTERS */}
       <div className="flex flex-wrap gap-5 mb-8">
-
         <SelectField
           label="Category"
           value={filters.category}
@@ -115,27 +136,41 @@ export default function WardrobePage() {
           options={SEASONS.map((s) => ({ label: s, value: s }))}
           placeholder="Select Season"
         />
-
       </div>
 
-      {/* ITEMS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
         {filtered.map((item) => (
           <div
             key={item.item_id}
-            className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-lg transition"
+            className="group relative bg-white rounded-2xl p-4 shadow-sm hover:shadow-lg transition"
           >
-            {/* IMAGE */}
+            <button
+              onClick={() =>
+                setDeleteModal({
+                  open: true,
+                  itemId: item.item_id,
+                })
+              }
+              className="
+                absolute top-3 right-3 z-50
+                opacity-0 group-hover:opacity-100
+                h-9 w-9 flex items-center justify-center
+                rounded-full bg-red-50 text-red-500
+                hover:bg-red-100 transition
+              "
+              title="Delete item"
+            >
+              <Trash2 size={16} />
+            </button>
+
             <div className="h-[260px] flex items-center justify-center">
               <img
-                src={`http://localhost:5000${item.image_url}`}
+                src={`${API}${item.image_url}`}
                 alt=""
                 className="h-full object-contain"
               />
             </div>
 
-            {/* TAGS */}
             <div className="flex flex-wrap gap-2 mt-3">
               <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
                 {item.style}
@@ -148,29 +183,99 @@ export default function WardrobePage() {
               </span>
             </div>
 
-            {/* BUTTON */}
             <button
-  onClick={() => router.push(`/member/generate?item_id=${item.item_id}`)}
-  className="mt-4 w-full bg-[#F5E6D3] rounded-xl py-2 text-sm font-medium hover:bg-[#ead7bf] transition"
->
-  Generate Outfit
-</button>
+              onClick={() => router.push(`/member/generate?item_id=${item.item_id}`)}
+              className="mt-4 w-full bg-[#F5E6D3] rounded-xl py-2 text-sm font-medium hover:bg-[#ead7bf] transition"
+            >
+              Generate Outfit
+            </button>
           </div>
         ))}
-
       </div>
 
-      {/* EMPTY STATE */}
       {filtered.length === 0 && (
         <p className="text-center text-gray-400 mt-10">
           No items found.
         </p>
       )}
+
+      {deleteModal.open && (
+  <div className="absolute inset-0 z-[9999] flex items-center justify-center px-4"
+    style={{ background: "rgba(30, 22, 15, 0.45)", backdropFilter: "blur(2px)" }}>
+    <div
+      className="w-full max-w-sm p-7"
+      style={{
+        background: "linear-gradient(160deg, #FFFDF9 0%, #FFF5E9 100%)",
+        borderRadius: "28px",
+        border: "1px solid rgba(245, 185, 120, 0.35)",
+        boxShadow: "0 2px 0 rgba(255,255,255,0.9) inset, 0 24px 60px rgba(47,62,52,0.18)",
+      }}
+    >
+      {/* Icon ring */}
+      <div className="mx-auto mb-4 flex items-center justify-center"
+        style={{
+          width: 56, height: 56, borderRadius: "50%",
+          background: "linear-gradient(145deg, #FFE8CE, #FFD4A8)",
+          border: "1.5px solid rgba(245, 160, 80, 0.3)",
+          boxShadow: "0 2px 8px rgba(245,160,80,0.18)",
+          color: "#D4782A",
+        }}>
+        <Trash2 size={22} strokeWidth={1.8} />
+      </div>
+
+      <h2 className="text-center mb-1.5"
+        style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 600, color: "#2A3328", letterSpacing: "-0.01em" }}>
+        Delete this item?
+      </h2>
+
+      <p className="text-center mb-6"
+        style={{ fontSize: 13.5, color: "#7C6E63", lineHeight: 1.6 }}>
+        This item will be removed<br />from your wardrobe.
+      </p>
+
+      {/* Divider */}
+      <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(210,170,120,0.35), transparent)", marginBottom: 20 }} />
+
+      <div className="flex gap-2.5">
+        <button
+          onClick={() => setDeleteModal({ open: false, itemId: null })}
+          className="flex-1 py-2.5 text-sm font-medium transition-all"
+          style={{
+            borderRadius: 14,
+            background: "rgba(255,255,255,0.7)",
+            border: "1px solid rgba(210,175,130,0.4)",
+            color: "#6B5B4F",
+            backdropFilter: "blur(4px)",
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,245,232,0.95)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.7)"}
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={handleDelete}
+          className="flex-1 py-2.5 text-sm font-semibold transition-all"
+          style={{
+            borderRadius: 14,
+            background: "linear-gradient(160deg, #F5A040 0%, #E8843A 100%)",
+            border: "1px solid rgba(200,110,40,0.25)",
+            color: "#fff",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 14px rgba(220,120,40,0.28)",
+          }}
+          onMouseEnter={e => e.currentTarget.style.filter = "brightness(1.07)"}
+          onMouseLeave={e => e.currentTarget.style.filter = "brightness(1)"}
+        >
+          Yes, Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
 
-/* ✅ CLEAN SELECT (NO ARROW) */
 function SelectField({ label, value, onChange, options, placeholder }) {
   const [open, setOpen] = useState(false);
 
@@ -180,24 +285,15 @@ function SelectField({ label, value, onChange, options, placeholder }) {
         {label}
       </label>
 
-      {/* BUTTON */}
       <div
         onClick={() => setOpen(!open)}
-        className="w-full bg-[#f7efe6] border border-[#e3d6c7] 
-        rounded-2xl px-5 py-3 text-sm flex justify-between items-center 
-        cursor-pointer shadow-sm"
+        className="w-full bg-[#f7efe6] border border-[#e3d6c7] rounded-2xl px-5 py-3 text-sm flex justify-between items-center cursor-pointer shadow-sm"
       >
         <span className={value ? "text-[#2d2d2d]" : "text-[#bfae9b]"}>
           {value || placeholder}
         </span>
 
-        {/* SAME ARROW */}
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          className="text-[#bfae9b]"
-        >
+        <svg width="16" height="16" viewBox="0 0 24 24" className="text-[#bfae9b]">
           <path
             fill="none"
             stroke="currentColor"
@@ -207,11 +303,8 @@ function SelectField({ label, value, onChange, options, placeholder }) {
         </svg>
       </div>
 
-      {/* DROPDOWN */}
       {open && (
         <div className="absolute z-50 mt-2 w-full bg-[#f7efe6] border border-[#e3d6c7] rounded-2xl shadow-md overflow-hidden">
-          
-          {/* placeholder */}
           <div
             onClick={() => {
               onChange("");
