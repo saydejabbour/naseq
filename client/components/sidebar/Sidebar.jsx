@@ -43,7 +43,7 @@ export default function Sidebar({ role }) {
 
     admin: [
       { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-      { label: "Stylist Accounts", href: "/admin/stylists", icon: Users },
+      { label: "Stylist Accounts", href: "/admin/stylistaccounts", icon: Users },
       { label: "Categories", href: "/admin/categories", icon: List },
     ],
   };

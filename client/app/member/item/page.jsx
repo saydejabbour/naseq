@@ -150,6 +150,15 @@ export default function AddItemPage() {
         body: formData,
       });
 
+      const colorRes = await fetch("http://localhost:5000/api/ai/detect-color", {
+  method: "POST",
+  body: formData,
+});
+
+const colorData = await colorRes.json();
+
+console.log("🎨 COLOR RESPONSE:", colorData);
+
       const data = await res.json();
 
       console.log("🤖 AI RESPONSE:", data);
@@ -171,6 +180,7 @@ export default function AddItemPage() {
   const IGNORE = new Set([
     "mini",           // too ambiguous alone — handled via explicit "miniskirt"
     "bra", "underwear", "lingerie", "nightgown", "negligee",
+    "wool", "woolen", "coat", "overcoat", "outerwear",
     "panty", "thong", "swimwear", "swimming trunks", "bathing trunks",
     "diaper", "napkin", "seat belt", "body part", "person",
     "knee pad", "handkerchief", "hankie", "hanky", "hankey",
@@ -499,7 +509,7 @@ export default function AddItemPage() {
   setForm((prev) => ({
     ...prev,
     category_id: detectedCategory,
-    color: detectedColor,
+   color: colorData?.success ? colorData.color : detectedColor,
     style: prev.style || "Casual",
     season: prev.season || "All Season",
     occasion: prev.occasion || "Everyday",

@@ -2,23 +2,18 @@ import db from "../config/db.js";
 import fs from "fs";
 import path from "path";
 
-
+/* =========================
+   CREATE STYLIST TEMPLATE
+========================= */
 export const createTemplate = async (req, res) => {
   const {
     stylist_id,
     title,
     description,
-    style,
-    season,
+    occasion,
     inspiration_image,
     items,
   } = req.body;
-
-  console.log("BODY KEYS:", Object.keys(req.body));
-console.log("HAS INSPIRATION:", !!inspiration_image);
-console.log("INSPIRATION START:", inspiration_image?.slice(0, 30));
-console.log("BACKEND BODY KEYS:", Object.keys(req.body));
-console.log("BACKEND INSPIRATION:", inspiration_image?.slice(0, 40));
 
   try {
     if (!stylist_id || !title) {
@@ -81,6 +76,121 @@ console.log("BACKEND INSPIRATION:", inspiration_image?.slice(0, 40));
     });
   } catch (err) {
     console.error("CREATE TEMPLATE ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Database error",
+    });
+  }
+};
+
+/* =========================
+   GET ALL STYLIST ACCOUNTS
+========================= */
+export const getStylistAccounts = async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(
+      `
+      SELECT
+        sa.application_id,
+        sa.user_id,
+        sa.status,
+        sa.bio,
+        sa.profile_photo,
+        u.full_name AS name,
+        u.email
+      FROM stylist_applications sa
+      JOIN users u ON sa.user_id = u.user_id
+      ORDER BY sa.application_id DESC
+      `
+    );
+
+    res.json({
+      success: true,
+      data: rows,
+    });
+  } catch (err) {
+    console.error("GET STYLIST ACCOUNTS ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Database error",
+    });
+  }
+};
+
+/* =========================
+   GET ONE STYLIST APPLICATION
+========================= */
+export const getStylistApplicationById = async (req, res) => {
+  const { application_id } = req.params;
+
+  try {
+    const [rows] = await db.promise().query(
+      `
+      SELECT
+        sa.application_id,
+        sa.user_id,
+        sa.status,
+        sa.bio,
+        sa.profile_photo,
+        u.full_name AS name,
+        u.email
+      FROM stylist_applications sa
+      JOIN users u ON sa.user_id = u.user_id
+      WHERE sa.application_id = ?
+      `,
+      [application_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: rows[0],
+    });
+  } catch (err) {
+    console.error("GET STYLIST APPLICATION ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Database error",
+    });
+  }
+};
+
+/* =========================
+   UPDATE STYLIST STATUS
+========================= */
+export const updateStylistStatus = async (req, res) => {
+  const { application_id } = req.params;
+  const { status } = req.body;
+
+  try {
+    if (!["Pending", "Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status",
+      });
+    }
+
+    await db.promise().query(
+      `
+      UPDATE stylist_applications
+      SET status = ?
+      WHERE application_id = ?
+      `,
+      [status, application_id]
+    );
+
+    res.json({
+      success: true,
+      message: "Status updated successfully",
+    });
+  } catch (err) {
+    console.error("UPDATE STYLIST STATUS ERROR:", err);
     res.status(500).json({
       success: false,
       message: "Database error",

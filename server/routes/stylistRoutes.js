@@ -4,6 +4,7 @@ import db from "../config/db.js";
 
 const router = express.Router();
 
+
 /* ================= STORAGE ================= */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
@@ -145,6 +146,60 @@ router.get("/profile/:user_id", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to get stylist profile",
+      error: err.message,
+    });
+  }
+});
+
+/* ================= ADMIN: GET ONE STYLIST ACCOUNT ================= */
+router.get("/admin/stylist-accounts/:application_id", async (req, res) => {
+  try {
+    const { application_id } = req.params;
+
+    const [rows] = await db.promise().query(
+      `SELECT 
+        sp.stylist_id AS application_id,
+        u.user_id,
+        u.full_name AS name,
+        u.email,
+        sp.bio,
+        sp.profile_photo,
+        COALESCE(sp.status, 'Approved') AS status
+       FROM stylist_profiles sp
+       JOIN users u ON sp.user_id = u.user_id
+       WHERE sp.stylist_id = ?`,
+      [application_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Stylist not found",
+      });
+    }
+
+    const stylist = rows[0];
+
+    const [portfolio] = await db.promise().query(
+      `SELECT portfolio_id, image_url
+       FROM stylist_portfolio
+       WHERE stylist_id = ?
+       ORDER BY portfolio_id DESC`,
+      [application_id]
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        ...stylist,
+        portfolio,
+      },
+    });
+  } catch (err) {
+    console.error("GET ONE STYLIST ACCOUNT ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch stylist account",
       error: err.message,
     });
   }
