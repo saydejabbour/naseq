@@ -145,22 +145,27 @@ export const generateOutfits = async (req, res) => {
   try {
     const { user_id, base_item_id, styles } = req.body;
 
-    if (!user_id || !base_item_id || !styles || styles.length === 0) {
-      return errorResponse(res, "Missing required fields", 400);
-    }
+   if (!user_id || !styles || styles.length === 0) {
+  return errorResponse(res, "Missing required fields", 400);
+}
 
-    // 🔹 BASE ITEM
-    const [baseRows] = await db.promise().query(
-      "SELECT * FROM clothing_items WHERE item_id = ? AND user_id = ?",
-      [base_item_id, user_id]
-    );
+    // 🔹 BASE ITEM (OPTIONAL)
+let baseItem = null;
+let category = null;
 
-    if (!baseRows.length) {
-      return errorResponse(res, "Base item not found", 404);
-    }
+if (base_item_id) {
+  const [baseRows] = await db.promise().query(
+    "SELECT * FROM clothing_items WHERE item_id = ? AND user_id = ?",
+    [base_item_id, user_id]
+  );
 
-    const baseItem = baseRows[0];
-    const category = baseItem.category_id;
+  if (!baseRows.length) {
+    return errorResponse(res, "Base item not found", 404);
+  }
+
+  baseItem = baseRows[0];
+  category = baseItem.category_id;
+}
 
     // 🔹 ALL ITEMS
     const [allItemsRaw] = await db.promise().query(
@@ -171,7 +176,7 @@ export const generateOutfits = async (req, res) => {
     const outfits = [];
 
     for (let style of styles) {
-      const used = new Set([baseItem.item_id]);
+      const used = new Set(baseItem ? [baseItem.item_id] : []);
 
       let outfit = {
         style,
@@ -183,7 +188,7 @@ export const generateOutfits = async (req, res) => {
       // ─────────────────────────────────────────────
       let usableItems;
 
-      if (category == 5) {
+     if (baseItem && category == 5) {
         // dress → remove tops & bottoms
         usableItems = allItemsRaw.filter(
           i => i.category_id !== 1 && i.category_id !== 2
@@ -202,33 +207,39 @@ export const generateOutfits = async (req, res) => {
       // 🎨 SCORE FUNCTION (IMPROVED)
       // ─────────────────────────────────────────────
       const calculateScore = (item) => {
-        let score = 0;
+  let score = 0;
 
-        const NEUTRAL = ["black", "white", "grey", "beige", "navy"];
+  const NEUTRAL = ["black", "white", "grey", "gray", "beige", "navy"];
 
-        // COLOR
-        if (item.color === baseItem.color) {
-          score += 4;
-        } else if (
-          NEUTRAL.includes(item.color?.toLowerCase()) ||
-          NEUTRAL.includes(baseItem.color?.toLowerCase())
-        ) {
-          score += 2;
-        }
+  // ✅ MODE 2: no selected item
+  // Score by style only, because there is no base item to compare with
+  if (!baseItem) {
+    if (item.style === style) score += 5;
+    if (item.season === "All Season") score += 2;
+    return score;
+  }
 
-        // SEASON
-        if (item.season === baseItem.season) {
-          score += 3;
-        } else if (
-          item.season === "All Season" ||
-          baseItem.season === "All Season"
-        ) {
-          score += 2;
-        }
+  // ✅ MODE 1: selected item exists
+  if (item.color === baseItem.color) {
+    score += 4;
+  } else if (
+    NEUTRAL.includes(item.color?.toLowerCase()) ||
+    NEUTRAL.includes(baseItem.color?.toLowerCase())
+  ) {
+    score += 2;
+  }
 
-        return score; // max ≈ 7
-      };
+  if (item.season === baseItem.season) {
+    score += 3;
+  } else if (
+    item.season === "All Season" ||
+    baseItem.season === "All Season"
+  ) {
+    score += 2;
+  }
 
+  return score;
+};
       // ─────────────────────────────────────────────
       // 🔥 BEST MATCH
       // ─────────────────────────────────────────────
@@ -266,7 +277,7 @@ export const generateOutfits = async (req, res) => {
       // ─────────────────────────────────────────────
       // 🧱 STRUCTURE LOGIC (CRITICAL FIX)
       // ─────────────────────────────────────────────
-      if (category == 5) {
+      if (baseItem && category == 5) {
         outfit.items.dress = baseItem;
 
       } else if (category == 1) {

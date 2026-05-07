@@ -158,7 +158,7 @@ export default function HomePage() {
         ref={heroRef}
         className="relative min-h-screen flex items-center overflow-hidden"
         style={{
-          background: `linear-gradient(135deg, ${C.cream} 0%, #EFF6F1 55%, #FAF4E8 100%)`,
+          background: `linear-gradient(135deg, ${C.cream} 0%, #EDF5EF 55%, #FAF4E8 100%)`,
         }}
       >
         <EditorialStrip />
@@ -166,7 +166,7 @@ export default function HomePage() {
         <Blob
           className="top-[-8%] left-[-6%] w-[40vw] h-[40vw] opacity-40"
           style={{
-            background: `radial-gradient(circle, ${C.sage}33 0%, transparent 70%)`,
+            background: `radial-gradient(circle, ${C.blush}33 0%, transparent 70%)`,
           }}
           animate={{ scale: [1, 1.12, 1], x: [0, 18, 0] }}
           transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
@@ -256,7 +256,7 @@ styles from top fashion experts.
                 <button
                   className="group relative overflow-hidden px-8 py-3.5 rounded-full font-semibold text-white text-sm shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
                   style={{
-                    background: `linear-gradient(135deg, ${C.forest} 0%, ${C.leaf} 100%)`,
+                    background: `linear-gradient(135deg, ${C.blush} 0%, ${C.amber} 100%)`,
                   }}
                 >
                   <span className="relative z-10 flex items-center gap-2">
@@ -270,8 +270,8 @@ styles from top fashion experts.
                 <button
                   className="px-8 py-3.5 rounded-full font-semibold text-sm border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                   style={{
-                    borderColor: `${C.forest}28`,
-                    color: C.forest,
+                    borderColor: `${C.amber}28`,
+                    color: C.amber,
                     background: "rgba(255,255,255,0.55)",
                     backdropFilter: "blur(12px)",
                   }}
@@ -596,7 +596,7 @@ styles from top fashion experts.
                 <div
                   className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg mb-5 text-white"
                   style={{
-                    background: `linear-gradient(135deg, ${C.forest}, ${C.leaf})`,
+                    background: `linear-gradient(135deg, ${C.amber}, ${C.blush})`,
                   }}
                 >
                   {icon}
@@ -713,7 +713,7 @@ styles from top fashion experts.
       {/* EDITORIAL INTERLUDE */}
       <section
         className="relative py-24 overflow-hidden"
-        style={{ background: C.sand }}
+        style={{ background: C.cream }}
       >
         <Blob
           className="top-0 left-0 w-[50vw] h-[50vw] opacity-30"

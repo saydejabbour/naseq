@@ -89,6 +89,11 @@ export const addItem = async (req, res) => {
 
     } catch (bgError) {
       console.warn("⚠️ remove.bg failed, using original image");
+      console.log("REMOVE BG KEY:", process.env.REMOVE_BG_API_KEY ? "FOUND" : "MISSING");
+console.log("FILE:", req.file ? "FOUND" : "MISSING");
+
+console.log("REMOVE BG STATUS:", bgError.response?.status);
+console.log("REMOVE BG DATA:", bgError.response?.data?.toString?.() || bgError.message);
 
       imageUrl = "/" + originalPath.replace(/\\/g, "/");
     }

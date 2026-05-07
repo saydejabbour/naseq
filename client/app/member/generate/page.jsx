@@ -604,7 +604,7 @@ export default function GeneratePage() {
   };
 
   const handleGenerate = async () => {
-    if (!selectedItem || selectedStyles.length === 0) return;
+    if (selectedStyles.length === 0) return;
     try {
       setLoading(true);
       await new Promise((res) => setTimeout(res, 1500));
@@ -615,11 +615,11 @@ export default function GeneratePage() {
 
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id:      user.user_id,
-          base_item_id: selectedItem.item_id,
-          styles:       selectedStyles,
-        }),
+       body: JSON.stringify({
+  user_id: user.user_id,
+  base_item_id: selectedItem?.item_id || null,
+  styles: selectedStyles,
+}),
       });
       console.log("end");
       const data = await res.json();
@@ -664,7 +664,7 @@ const found = itemsArray.find(
   }, [itemId, user]);
 
   const styleOptions = ["Casual", "Formal", "Sporty", "Elegant", "Chic"];
-  const canGenerate  = selectedItem && selectedStyles.length > 0 && !loading;
+  const canGenerate = selectedStyles.length > 0 && !loading;
 
   return (
     <>
