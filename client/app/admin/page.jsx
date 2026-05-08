@@ -32,9 +32,9 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   return (
-    <div className="bg-[#FDF8F3] min-h-screen">
+    <div>
 
-      {/* 🔥 HERO HEADER */}
+      {/* HERO HEADER */}
       <div className="px-10 pt-14 pb-24">
         <p className="text-xs uppercase tracking-widest text-[#7CB98B] mb-3">
           Admin Panel
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
         </p>
       </div>
 
-      {/* 🔥 QUICK ACTIONS */}
+      {/* QUICK ACTIONS */}
       <div className="px-10 -mt-16">
         <div className="flex items-center gap-3 mb-6">
           <span className="text-xs uppercase text-gray-400">

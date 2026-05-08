@@ -27,7 +27,207 @@ export const upload = multer({
   },
 });
 
-/* ================= ADD ITEM (FIXED) ================= */
+/* ================= GET CATEGORIES ================= */
+export const getCategories = (req, res) => {
+  const query = `
+    SELECT 
+      c.category_id,
+      c.name,
+      c.description,
+      c.status,
+      COUNT(ci.item_id) AS item_count
+    FROM categories c
+    LEFT JOIN clothing_items ci ON c.category_id = ci.category_id
+    GROUP BY c.category_id, c.name, c.description, c.status
+    ORDER BY c.category_id ASC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("GET CATEGORIES ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: results,
+    });
+  });
+};
+
+/* ================= GET SINGLE CATEGORY BY ID ================= */
+export const getCategoryById = (req, res) => {
+  const { id } = req.params;
+
+  db.query(
+    "SELECT * FROM categories WHERE category_id = ?",
+    [id],
+    (err, results) => {
+      if (err) {
+        console.error("GET CATEGORY BY ID ERROR:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+        });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Category not found",
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: results[0],
+      });
+    }
+  );
+};
+
+/* ================= CREATE CATEGORY ================= */
+export const createCategory = (req, res) => {
+  const { name, description, status } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: "Category name is required",
+    });
+  }
+
+  const cleanName = name.trim();
+
+  db.query(
+    "INSERT INTO categories (name, description, status) VALUES (?, ?, ?)",
+    [cleanName, description || null, status || "active"],
+    (err, result) => {
+      if (err) {
+        console.error("CREATE CATEGORY ERROR:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+        });
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: "Category created successfully",
+        data: {
+          category_id: result.insertId,
+          name: cleanName,
+          description: description || null,
+          status: status || "active",
+        },
+      });
+    }
+  );
+};
+
+/* ================= UPDATE CATEGORY ================= */
+export const updateCategory = (req, res) => {
+  const { id } = req.params;
+  const { name, description, status } = req.body;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: "Category name is required",
+    });
+  }
+
+  const cleanName = name.trim();
+
+  db.query(
+    `
+    UPDATE categories
+    SET name = ?, description = ?, status = ?
+    WHERE category_id = ?
+    `,
+    [cleanName, description || null, status || "active", id],
+    (err, result) => {
+      if (err) {
+        console.error("UPDATE CATEGORY ERROR:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Category not found",
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: "Category updated successfully",
+      });
+    }
+  );
+};
+
+/* ================= DELETE CATEGORY ================= */
+export const deleteCategory = (req, res) => {
+  const { id } = req.params;
+
+  db.query(
+    "SELECT COUNT(*) AS item_count FROM clothing_items WHERE category_id = ?",
+    [id],
+    (countErr, countRows) => {
+      if (countErr) {
+        console.error("CHECK CATEGORY ITEMS ERROR:", countErr);
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+        });
+      }
+
+      const itemCount = countRows[0].item_count;
+
+      if (itemCount > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Cannot delete category because it has clothing items.",
+        });
+      }
+
+      db.query(
+        "DELETE FROM categories WHERE category_id = ?",
+        [id],
+        (err, result) => {
+          if (err) {
+            console.error("DELETE CATEGORY ERROR:", err);
+            return res.status(500).json({
+              success: false,
+              message: "Database error",
+            });
+          }
+
+          if (result.affectedRows === 0) {
+            return res.status(404).json({
+              success: false,
+              message: "Category not found",
+            });
+          }
+
+          return res.json({
+            success: true,
+            message: "Category deleted successfully",
+          });
+        }
+      );
+    }
+  );
+};
+
+/* ================= ADD ITEM ================= */
 export const addItem = async (req, res) => {
   let originalPath = null;
   let cleanPath = null;
@@ -50,7 +250,6 @@ export const addItem = async (req, res) => {
       });
     }
 
-    // ✅ ONLY REQUIRED FIELDS
     if (!category_id || !user_id) {
       return res.status(400).json({
         success: false,
@@ -60,7 +259,6 @@ export const addItem = async (req, res) => {
 
     originalPath = req.file.path;
 
-    /* ================= REMOVE BG (SAFE) ================= */
     let imageUrl = "";
 
     try {
@@ -86,19 +284,22 @@ export const addItem = async (req, res) => {
       fs.unlinkSync(originalPath);
 
       imageUrl = "/" + cleanPath.replace(/\\/g, "/");
-
     } catch (bgError) {
       console.warn("⚠️ remove.bg failed, using original image");
-      console.log("REMOVE BG KEY:", process.env.REMOVE_BG_API_KEY ? "FOUND" : "MISSING");
-console.log("FILE:", req.file ? "FOUND" : "MISSING");
-
-console.log("REMOVE BG STATUS:", bgError.response?.status);
-console.log("REMOVE BG DATA:", bgError.response?.data?.toString?.() || bgError.message);
+      console.log(
+        "REMOVE BG KEY:",
+        process.env.REMOVE_BG_API_KEY ? "FOUND" : "MISSING"
+      );
+      console.log("FILE:", req.file ? "FOUND" : "MISSING");
+      console.log("REMOVE BG STATUS:", bgError.response?.status);
+      console.log(
+        "REMOVE BG DATA:",
+        bgError.response?.data?.toString?.() || bgError.message
+      );
 
       imageUrl = "/" + originalPath.replace(/\\/g, "/");
     }
 
-    /* ================= SAVE DB ================= */
     const query = `
       INSERT INTO clothing_items
       (user_id, category_id, subcategory, image_url, color, style, season, occasion)
@@ -134,7 +335,6 @@ console.log("REMOVE BG DATA:", bgError.response?.data?.toString?.() || bgError.m
         });
       }
     );
-
   } catch (err) {
     console.error("ADD ITEM ERROR:", err);
 
@@ -162,18 +362,21 @@ export const getUserItems = (req, res) => {
 
   db.query(query, [user_id], (err, results) => {
     if (err) {
-      console.error(err);
-      return res.status(500).json({ message: "Database error." });
+      console.error("GET USER ITEMS ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error.",
+      });
     }
 
     return res.json({
       success: true,
-      data: results, // ✅ IMPORTANT FIX
+      data: results,
     });
   });
 };
 
-/* ================= DELETE ================= */
+/* ================= DELETE ITEM ================= */
 export const deleteItem = (req, res) => {
   const { item_id } = req.params;
 
@@ -181,10 +384,18 @@ export const deleteItem = (req, res) => {
     "SELECT image_url FROM clothing_items WHERE item_id = ?",
     [item_id],
     (err, rows) => {
-      if (err) return res.status(500).json({ message: "DB error" });
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: "DB error",
+        });
+      }
 
       if (!rows.length) {
-        return res.status(404).json({ message: "Item not found" });
+        return res.status(404).json({
+          success: false,
+          message: "Item not found",
+        });
       }
 
       const filePath = rows[0].image_url.replace(/^\//, "");
@@ -199,7 +410,12 @@ export const deleteItem = (req, res) => {
         "DELETE FROM clothing_items WHERE item_id = ?",
         [item_id],
         (err) => {
-          if (err) return res.status(500).json({ message: "Delete failed" });
+          if (err) {
+            return res.status(500).json({
+              success: false,
+              message: "Delete failed",
+            });
+          }
 
           return res.json({
             success: true,

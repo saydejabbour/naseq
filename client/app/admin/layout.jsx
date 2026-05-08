@@ -34,7 +34,7 @@ export default function AdminLayout({ children }) {
 
   // ✅ YOUR ORIGINAL UI
   return (
-    <div className="flex min-h-screen bg-[#FDF8F3]">
+    <div className="flex min-h-screen bg-[#f5ede3]">
 
       {/* Sidebar */}
       <Sidebar role="admin" />
