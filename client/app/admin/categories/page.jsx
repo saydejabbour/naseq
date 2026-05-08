@@ -1,19 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const CLOTHING_API = "http://localhost:5000/api/clothing";
 
 export default function CategoriesPage() {
+  const router = useRouter();
+
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchCategories = async () => {
     try {
       const res = await fetch(`${CLOTHING_API}/categories`);
       const data = await res.json();
-
       if (data.success) {
         setCategories(data.data || []);
       } else {
@@ -27,67 +29,105 @@ export default function CategoriesPage() {
     }
   };
 
+  const handleDelete = async (category) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${category.name}"?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      setDeletingId(category.category_id);
+      const res = await fetch(
+        `${CLOTHING_API}/categories/${category.category_id}`,
+        { method: "DELETE" }
+      );
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.message || "Failed to delete category");
+        return;
+      }
+      setCategories((prev) =>
+        prev.filter((item) => item.category_id !== category.category_id)
+      );
+      alert("Category deleted successfully");
+    } catch (err) {
+      console.error("DELETE CATEGORY ERROR:", err);
+      alert("Server error while deleting category");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   useEffect(() => {
     fetchCategories();
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f5ede3] px-10 py-10">
-      <div className="mb-10 flex items-center justify-between">
+    <div className="px-10 py-10">
+      {/* Header */}
+      <div className="mb-8 flex items-center justify-between">
         <h1 className="font-serif text-[28px] font-semibold text-black">
           Manager Categories
         </h1>
-
-        <button className="inline-flex items-center gap-2 rounded-lg bg-[#7ac653] px-6 py-3 text-[15px] font-medium text-white shadow-lg shadow-black/20 hover:bg-[#6ab746]">
-          <Plus size={16} />
-          Add Category
+        <button
+          onClick={() => router.push("/admin/categories/add")}
+          className="inline-flex items-center gap-2 rounded-lg bg-[#7ac653] px-5 py-2.5 text-[14px] font-medium text-white shadow-md hover:bg-[#6ab746] transition-colors"
+        >
+          + Add Category
         </button>
       </div>
 
-      <div className="mx-auto max-w-5xl overflow-hidden rounded-xl bg-white shadow-[0_4px_18px_rgba(0,0,0,0.18)]">
-        <div className="grid grid-cols-[1.2fr_0.8fr_1fr] border-b border-[#ddd] bg-white px-7 py-4">
-          <span className="font-serif text-[16px] font-semibold text-[#666]">
-            category
-          </span>
-          <span className="font-serif text-[16px] font-semibold text-[#666]">
-            item
-          </span>
-          <span className="font-serif text-[16px] font-semibold text-[#666]">
-            Actions
-          </span>
+      {/* Table Card */}
+      <div className="rounded-2xl bg-white shadow-[0_4px_18px_rgba(0,0,0,0.12)] overflow-hidden">
+        {/* Table Header */}
+        <div className="grid grid-cols-[1.5fr_0.7fr_1fr] px-8 py-4 border-b border-[#ececec]">
+          <span className="font-serif text-[14px] text-[#888]">category</span>
+          <span className="font-serif text-[14px] text-[#888]">item</span>
+          <span className="font-serif text-[14px] text-[#888]">Actions</span>
         </div>
 
+        {/* Rows */}
         {loading ? (
-          <div className="px-7 py-6 text-center text-[#888]">
+          <div className="px-8 py-10 text-center text-[#aaa] text-[14px]">
             Loading categories...
           </div>
         ) : categories.length === 0 ? (
-          <div className="px-7 py-6 text-center text-[#888]">
+          <div className="px-8 py-10 text-center text-[#aaa] text-[14px]">
             No categories found.
           </div>
         ) : (
-          categories.map((category) => (
+          categories.map((category, index) => (
             <div
               key={category.category_id}
-              className="grid grid-cols-[1.2fr_0.8fr_1fr] items-center border-b border-[#e5e5e5] bg-white px-7 py-4 shadow-[0_3px_10px_rgba(0,0,0,0.12)] last:border-b-0"
+              className={`grid grid-cols-[1.5fr_0.7fr_1fr] items-center px-8 py-4 ${
+                index !== categories.length - 1 ? "border-b border-[#f0f0f0]" : ""
+              } hover:bg-[#fdf9f6] transition-colors`}
             >
-              <span className="text-[15px] text-black">
+              <span className="text-[15px] font-medium text-black">
                 {category.name}
               </span>
 
-              <span className="text-[15px] text-[#888]">
-                {category.item_count || category.count || 0}
+              <span className="text-[14px] text-[#aaa]">
+                {category.item_count ?? category.count ?? 0}
               </span>
 
-              <div className="flex items-center gap-6">
-                <button className="inline-flex items-center gap-2 rounded-lg bg-[#fdeeee] px-4 py-1.5 text-[15px] text-black hover:bg-[#f9dddd]">
-                  <Pencil size={18} className="text-[#888]" />
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() =>
+                    router.push(`/admin/categories/${category.category_id}`)
+                  }
+                  className="rounded-lg bg-[#fde8e8] px-5 py-1.5 text-[13px] font-medium text-black hover:bg-[#f9d6d6] transition-colors"
+                >
                   Edit
                 </button>
 
-                <button className="inline-flex items-center gap-2 rounded-lg bg-[#fdeeee] px-4 py-1.5 text-[15px] text-red-500 hover:bg-[#f9dddd]">
-                  <Trash2 size={18} />
-                  Delete
+                <button
+                  type="button"
+                  onClick={() => handleDelete(category)}
+                  disabled={deletingId === category.category_id}
+                  className="rounded-lg bg-[#fde8e8] px-5 py-1.5 text-[13px] font-medium text-red-500 hover:bg-[#f9d6d6] transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deletingId === category.category_id ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>

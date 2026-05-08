@@ -45,6 +45,43 @@ router.get("/categories", async (req, res) => {
   }
 });
 
+/* GET SINGLE CATEGORY BY ID */
+router.get("/categories/:category_id", async (req, res) => {
+  try {
+    const { category_id } = req.params;
+
+    const [rows] = await db.promise().query(
+      `SELECT 
+        category_id,
+        name,
+        description,
+        is_active
+       FROM categories
+       WHERE category_id = ?`,
+      [category_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: rows[0],
+    });
+  } catch (err) {
+    console.error("GET SINGLE CATEGORY ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch category",
+      error: err.message,
+    });
+  }
+});
+
 /* ADD CATEGORY */
 router.post("/categories", async (req, res) => {
   try {
@@ -57,7 +94,7 @@ router.post("/categories", async (req, res) => {
       });
     }
 
-    await db.promise().query(
+    const [result] = await db.promise().query(
       `INSERT INTO categories (name, description, is_active)
        VALUES (?, ?, ?)`,
       [name.trim(), description || "", is_active ? 1 : 0]
@@ -66,6 +103,12 @@ router.post("/categories", async (req, res) => {
     return res.json({
       success: true,
       message: "Category added successfully",
+      data: {
+        category_id: result.insertId,
+        name: name.trim(),
+        description: description || "",
+        is_active: is_active ? 1 : 0,
+      },
     });
   } catch (err) {
     console.error("ADD CATEGORY ERROR:", err);
@@ -90,12 +133,19 @@ router.put("/categories/:category_id", async (req, res) => {
       });
     }
 
-    await db.promise().query(
+    const [result] = await db.promise().query(
       `UPDATE categories
        SET name = ?, description = ?, is_active = ?
        WHERE category_id = ?`,
       [name.trim(), description || "", is_active ? 1 : 0, category_id]
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
 
     return res.json({
       success: true,
@@ -116,10 +166,31 @@ router.delete("/categories/:category_id", async (req, res) => {
   try {
     const { category_id } = req.params;
 
-    await db.promise().query(
+    const [items] = await db.promise().query(
+      `SELECT COUNT(*) AS item_count
+       FROM clothing_items
+       WHERE category_id = ?`,
+      [category_id]
+    );
+
+    if (items[0].item_count > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete category because it has clothing items.",
+      });
+    }
+
+    const [result] = await db.promise().query(
       `DELETE FROM categories WHERE category_id = ?`,
       [category_id]
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
 
     return res.json({
       success: true,
