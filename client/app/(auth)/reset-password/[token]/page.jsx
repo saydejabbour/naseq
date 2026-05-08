@@ -39,7 +39,15 @@ export default function ResetPasswordTokenPage() {
       );
 
       const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
+
+let data = {};
+try {
+  data = text ? JSON.parse(text) : {};
+} catch {
+  console.log("Backend returned non-JSON:", text);
+  alert("Backend route error. Check reset-password API route.");
+  return;
+}
 
       if (!res.ok) {
         alert(data.message || "Failed to reset password");

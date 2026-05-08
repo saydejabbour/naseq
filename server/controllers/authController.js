@@ -4,7 +4,6 @@ import crypto from "crypto";
 import { successResponse, errorResponse } from "../utils/response.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
-
 // ================= REGISTER =================
 export const register = async (req, res) => {
   const { full_name, email, password, role } = req.body;
@@ -14,7 +13,6 @@ export const register = async (req, res) => {
   }
 
   try {
-    // CHECK IF EMAIL EXISTS
     db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
       if (err) return errorResponse(res, "Database error");
 
@@ -23,17 +21,12 @@ export const register = async (req, res) => {
       }
 
       try {
-        // HASH PASSWORD
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // DEFAULT ROLE
         const userRole = role || "member";
 
-        // 🔥 VERIFICATION TOKEN (NEW - ONLY ADDITION)
         const verificationToken = crypto.randomBytes(32).toString("hex");
-        const verificationExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+        const verificationExpires = new Date(Date.now() + 60 * 60 * 1000);
 
-        // INSERT USER (UPDATED ONLY HERE)
         db.query(
           `INSERT INTO users 
           (full_name, email, password_hash, role, is_verified, verification_token, verification_expires) 
@@ -50,7 +43,6 @@ export const register = async (req, res) => {
           async (err) => {
             if (err) return errorResponse(res, "Failed to register user");
 
-            // 🔥 SEND VERIFICATION EMAIL
             const verifyLink = `http://localhost:5000/api/auth/verify/${verificationToken}`;
 
             try {
@@ -66,29 +58,24 @@ export const register = async (req, res) => {
               );
 
               console.log("✅ VERIFICATION EMAIL SENT TO:", email);
-
             } catch (emailError) {
               console.error("❌ EMAIL FAILED:", emailError);
-              // do NOT break signup if email fails
             }
 
             return successResponse(res, "Account created. Please verify your email.");
           }
         );
-
       } catch (hashError) {
         return errorResponse(res, "Password hashing failed");
       }
     });
-
   } catch (error) {
     console.error(error);
     return errorResponse(res, "Server error");
   }
 };
 
-
-// ================= VERIFY EMAIL (NEW - DOES NOT AFFECT OTHERS) =================
+// ================= VERIFY EMAIL =================
 export const verifyEmail = (req, res) => {
   const { token } = req.params;
 
@@ -123,7 +110,6 @@ export const verifyEmail = (req, res) => {
   );
 };
 
-
 // ================= LOGIN =================
 export const login = (req, res) => {
   const { email, password } = req.body;
@@ -151,7 +137,6 @@ db.query(query, [email], async (err, results) => {
 
     const user = results[0];
 
-    // 🔥 ONLY ADD THIS CHECK (SAFE)
     if (!user.is_verified) {
       return errorResponse(res, "Please verify your email first", 403);
     }
@@ -172,8 +157,7 @@ db.query(query, [email], async (err, results) => {
   });
 };
 
-
-// ================= FORGOT PASSWORD (UNCHANGED ✅) =================
+// ================= FORGOT PASSWORD =================
 export const forgotPassword = (req, res) => {
   const { email } = req.body;
 
@@ -217,17 +201,72 @@ export const forgotPassword = (req, res) => {
             console.log("✅ RESET EMAIL SENT TO:", email);
 
             return successResponse(res, "Reset email sent");
-
           } catch (emailError) {
             console.error("❌ EMAIL FAILED:", emailError);
             return errorResponse(res, "Failed to send email", 500);
           }
         }
       );
-
     } catch (error) {
       console.error(error);
       return errorResponse(res, "Server error");
     }
   });
+};
+
+// ================= RESET PASSWORD =================
+export const resetPassword = (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  if (!token) {
+    return errorResponse(res, "Token is required", 400);
+  }
+
+  if (!password) {
+    return errorResponse(res, "Password is required", 400);
+  }
+
+  db.query(
+    `SELECT * FROM users 
+     WHERE reset_token = ? 
+     AND reset_token_expiry > NOW()`,
+    [token],
+    async (err, results) => {
+      if (err) {
+        console.error("RESET SELECT ERROR:", err);
+        return errorResponse(res, "Database error");
+      }
+
+      if (results.length === 0) {
+        return errorResponse(res, "Invalid or expired reset link", 400);
+      }
+
+      try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        db.query(
+          `UPDATE users 
+           SET password_hash = ?,
+               reset_token = NULL,
+               reset_token_expiry = NULL
+           WHERE reset_token = ?`,
+          [hashedPassword, token],
+          (err) => {
+            if (err) {
+              console.error("RESET UPDATE ERROR:", err);
+              return errorResponse(res, "Failed to reset password");
+            }
+
+            console.log("✅ PASSWORD RESET SUCCESSFUL");
+
+            return successResponse(res, "Password reset successful");
+          }
+        );
+      } catch (hashError) {
+        console.error("RESET HASH ERROR:", hashError);
+        return errorResponse(res, "Password hashing failed");
+      }
+    }
+  );
 };
