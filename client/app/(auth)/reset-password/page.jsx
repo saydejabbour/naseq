@@ -17,9 +17,9 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    try {
-      setLoading(true);
+    setLoading(true);
 
+    try {
       const res = await fetch("http://127.0.0.1:5000/api/auth/forgot-password", {
         method: "POST",
         headers: {
@@ -28,17 +28,19 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
 
       if (!res.ok) {
-        alert(data.message);
-      } else {
-        alert("✅ Reset link sent to your email");
+        alert(data.message || "Server error");
+        return;
       }
 
+      alert(data.message || "Reset link sent to your email");
+      setEmail("");
     } catch (err) {
-      console.error(err);
-      alert("❌ Server error");
+      console.error("Forgot password error:", err);
+      alert("Server error");
     } finally {
       setLoading(false);
     }
@@ -47,8 +49,6 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] p-10 text-center">
-
-        {/* LOGO */}
         <div className="flex justify-center mb-6">
           <img src="/logo.png" alt="Naseq" className="w-28 object-contain" />
         </div>
@@ -58,14 +58,12 @@ export default function ForgotPasswordPage() {
         </h2>
 
         <p className="text-sm text-gray-500 mb-8">
-          Enter your email and we'll send you a reset link
+          Enter your email and we&apos;ll send you a reset link
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="text-left">
-            <label className="text-sm text-gray-700 mb-1 block">
-              Email
-            </label>
+            <label className="text-sm text-gray-700 mb-1 block">Email</label>
 
             <input
               type="email"
@@ -81,7 +79,7 @@ export default function ForgotPasswordPage() {
             disabled={loading}
             className={`w-full py-3.5 rounded-xl text-sm font-medium transition ${
               loading
-                ? "bg-gray-400"
+                ? "bg-gray-400 cursor-not-allowed"
                 : "bg-[#7CB98B] hover:bg-[#6aa87a] text-white"
             }`}
           >
@@ -97,7 +95,6 @@ export default function ForgotPasswordPage() {
             ← Back To Login
           </button>
         </div>
-
       </div>
     </div>
   );
