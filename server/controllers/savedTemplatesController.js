@@ -45,16 +45,20 @@ export const getSavedTemplates = (req, res) => {
       st.season,
       st.occasion,
       st.image_url,
-      u.full_name AS stylist_name
+      COALESCE(sp.name, u.full_name) AS stylist_name
     FROM saved_templates s
-    JOIN stylist_templates st ON s.template_id = st.template_id
-    JOIN users u ON st.stylist_id = u.user_id
+    JOIN stylist_templates st 
+      ON s.template_id = st.template_id
+    JOIN stylist_profiles sp 
+      ON st.stylist_id = sp.stylist_id
+    JOIN users u 
+      ON sp.user_id = u.user_id
     WHERE s.user_id = ?
   `;
 
   db.query(query, [user_id], (err, results) => {
     if (err) {
-      console.error("🔥 SQL ERROR:", err); // IMPORTANT
+      console.error("🔥 SQL ERROR:", err);
       return res.status(500).json({
         success: false,
         message: "Database error",

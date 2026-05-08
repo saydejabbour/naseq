@@ -132,7 +132,17 @@ export const login = (req, res) => {
     return errorResponse(res, "Email and password are required", 400);
   }
 
-  db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
+ const query = `
+  SELECT
+    u.*,
+    sp.profile_photo
+  FROM users u
+  LEFT JOIN stylist_profiles sp
+    ON u.user_id = sp.user_id
+  WHERE u.email = ?
+`;
+
+db.query(query, [email], async (err, results) => {
     if (err) return errorResponse(res, "Database error");
 
     if (results.length === 0) {
@@ -153,11 +163,12 @@ export const login = (req, res) => {
     }
 
     return successResponse(res, "Login successful", {
-      user_id: user.user_id,
-      full_name: user.full_name,
-      email: user.email,
-      role: user.role,
-    });
+  user_id: user.user_id,
+  full_name: user.full_name,
+  email: user.email,
+  role: user.role,
+  profile_photo: user.profile_photo,
+});
   });
 };
 

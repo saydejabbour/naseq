@@ -74,9 +74,19 @@ export default function OutfitDetailsUI({
       hover:bg-green-50 transition
     "
   >
-    <div className="h-9 w-9 rounded-full bg-[#DDF2DF] text-[#1f3b25] flex items-center justify-center text-sm font-semibold">
+    <div className="h-9 w-9 rounded-full bg-[#DDF2DF] overflow-hidden flex items-center justify-center">
+  {outfit.profile_photo ? (
+    <img
+      src={`${process.env.NEXT_PUBLIC_API_URL}${outfit.profile_photo}`}
+      alt={outfit.stylist || "Stylist"}
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    <span className="text-[#1f3b25] text-sm font-semibold">
       {outfit.stylist?.[0]?.toUpperCase() || "S"}
-    </div>
+    </span>
+  )}
+</div>
 
     <div className="leading-tight">
       <p className="text-[10px] uppercase tracking-wide text-gray-400">
@@ -114,18 +124,22 @@ export default function OutfitDetailsUI({
             ))}
           </div>
 
-          {/* SAVE BUTTON */}
-          <SaveButton
-            user={user}
-            saved={saved}
-            saving={saving}
-            onSave={onSave}
-            onSignup={onSignup}
-          />
+         {/* ✅ ONLY MEMBERS CAN SAVE */}
+{(!user || user.role === "member") && (
+  <>
+    <SaveButton
+      user={user}
+      saved={saved}
+      saving={saving}
+      onSave={onSave}
+      onSignup={onSignup}
+    />
 
-          <p className="text-xs text-gray-400 mt-3">
-            Saved looks appear in your personal wardrobe archive.
-          </p>
+    <p className="text-xs text-gray-400 mt-3">
+      Saved looks appear in your personal wardrobe archive.
+    </p>
+  </>
+)}
 
         </div>
       </div>

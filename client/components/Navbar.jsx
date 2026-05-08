@@ -84,18 +84,28 @@ export default function Navbar() {
           </>
         ) : (
           <>
-            <button
-              onClick={() => {
-                if (!user) return;
+           <button
+  onClick={() => {
+    if (!user) return;
 
-                if (user.role === "member") window.location.href = "/member";
-                else if (user.role === "stylist") window.location.href = "/stylist";
-                else if (user.role === "admin") window.location.href = "/admin";
-              }}
-              className="w-9 h-9 rounded-full bg-[#DDE8E1] text-[#2F3E34] flex items-center justify-center hover:bg-[#7CB98B] hover:text-white"
-            >
-              👤
-            </button>
+    if (user.role === "member") window.location.href = "/member";
+    else if (user.role === "stylist") window.location.href = "/stylist";
+    else if (user.role === "admin") window.location.href = "/admin";
+  }}
+  className="w-9 h-9 rounded-full overflow-hidden bg-[#DDE8E1] text-[#2F3E34] flex items-center justify-center hover:bg-[#7CB98B] hover:text-white"
+>
+  {user?.profile_photo ? (
+    <img
+      src={`${process.env.NEXT_PUBLIC_API_URL}${user.profile_photo}`}
+      alt={user.full_name || "User"}
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    <span className="text-sm font-semibold">
+      {user?.full_name?.[0]?.toUpperCase() || "👤"}
+    </span>
+  )}
+</button>
 
             <button
               onClick={logout}

@@ -20,7 +20,8 @@ router.get("/", (req, res) => {
       st.occasion,
      st.image_url,
 st.stylist_id AS stylist_id,
-u.full_name AS stylist
+COALESCE(sp.name, u.full_name) AS stylist,
+sp.profile_photo
     FROM stylist_templates st
     JOIN stylist_profiles sp ON st.stylist_id = sp.stylist_id
     JOIN users u ON sp.user_id = u.user_id
@@ -84,7 +85,8 @@ router.get("/template/:id", (req, res) => {
       st.occasion,
       st.image_url,
 st.stylist_id AS stylist_id,
-u.full_name AS stylist
+COALESCE(sp.name, u.full_name) AS stylist,
+sp.profile_photo
     FROM stylist_templates st
     JOIN stylist_profiles sp ON st.stylist_id = sp.stylist_id
     JOIN users u ON sp.user_id = u.user_id

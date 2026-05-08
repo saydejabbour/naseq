@@ -47,30 +47,31 @@ export default function OutfitDetailsPage() {
     return;
   }
 
+  // ✅ Only members can save outfits
+  if (user.role === "stylist" || user.role === "admin") {
+    alert("Only members can save outfits.");
+    return;
+  }
+
   if (!outfit) return;
 
   setSaving(true);
 
   try {
     if (saved) {
-      // 🔴 REMOVE
       await fetch(
         `http://localhost:5000/api/saved-templates/${user.user_id}/${outfit.id}`,
         { method: "DELETE" }
       );
 
       setSaved(false);
-
     } else {
-      // 🟢 SAVE
       const res = await saveTemplate(user.user_id, outfit.id);
 
       if (res.success || res.message === "Already saved") {
-        
         setSaved(true);
       }
     }
-
   } catch (err) {
     console.error(err);
   } finally {
