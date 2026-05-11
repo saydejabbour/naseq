@@ -2,6 +2,7 @@
 
 import SaveButton from "./SaveButton";
 import Link from "next/link";
+import { Heart } from "lucide-react";
 
 export default function OutfitDetailsUI({
   outfit,
@@ -74,6 +75,7 @@ export default function OutfitDetailsUI({
       hover:bg-green-50 transition
     "
   >
+    
     <div className="h-9 w-9 rounded-full bg-[#DDF2DF] overflow-hidden flex items-center justify-center">
   {outfit.profile_photo ? (
     <img
@@ -86,6 +88,8 @@ export default function OutfitDetailsUI({
       {outfit.stylist?.[0]?.toUpperCase() || "S"}
     </span>
   )}
+
+  
 </div>
 
     <div className="leading-tight">
@@ -115,6 +119,8 @@ export default function OutfitDetailsUI({
             {outfit.description || "No description available"}
           </p>
 
+          
+
           {/* TAGS */}
           <div className="flex gap-2 mb-8">
             {tags.map((tag) => (
@@ -122,7 +128,19 @@ export default function OutfitDetailsUI({
                 {tag}
               </span>
             ))}
+
+            
           </div>
+
+           <div className="mt-4 inline-flex items-center gap-2 bg-[#FFF1E3] text-[#F5A962] px-4 py-2 rounded-full font-semibold text-sm w-fit">
+  <Heart size={16} fill="#F5A962" strokeWidth={2.3} />
+  <span>
+    {outfit.save_count || 0} save
+    {(outfit.save_count || 0) !== 1 ? "s" : ""}
+  </span>
+</div>
+
+          
 
          {/* ✅ ONLY MEMBERS CAN SAVE */}
 {(!user || user.role === "member") && (
@@ -134,7 +152,7 @@ export default function OutfitDetailsUI({
       onSave={onSave}
       onSignup={onSignup}
     />
-
+   
     <p className="text-xs text-gray-400 mt-3">
       Saved looks appear in your personal wardrobe archive.
     </p>

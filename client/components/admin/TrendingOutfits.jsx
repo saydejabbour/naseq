@@ -1,4 +1,7 @@
+import { useRouter } from "next/navigation";
+
 const BASE_URL = "http://localhost:5000";
+
 
 export default function TrendingOutfits({ data = [], onAnnounce }) {
   const getImageUrl = (imageUrl) => {
@@ -6,6 +9,8 @@ export default function TrendingOutfits({ data = [], onAnnounce }) {
     if (imageUrl.startsWith("http")) return imageUrl;
     return `${BASE_URL}${imageUrl}`;
   };
+
+  const router = useRouter();
 
   return (
     <div className="bg-white rounded-3xl border border-[#E8DED2] p-7 shadow-sm">
@@ -23,9 +28,10 @@ export default function TrendingOutfits({ data = [], onAnnounce }) {
         <div className="space-y-3">
           {data.map((outfit, index) => (
             <div
-              key={outfit.template_id}
-              className="group flex items-center gap-4 rounded-2xl hover:bg-[#FDF8F3] transition-all duration-200 p-3 cursor-pointer border border-transparent hover:border-[#EDE5DC]"
-            >
+  key={outfit.template_id}
+  onClick={() => router.push(`/explore/${outfit.template_id}`)}
+  className="flex items-center gap-5 rounded-2xl hover:bg-[#FDF8F3] transition p-2 cursor-pointer"
+>
               <div className="relative w-[72px] h-[72px] rounded-xl overflow-hidden bg-[#F8F1EA] border border-[#EDE5DC] flex-shrink-0">
                 <img
                   src={getImageUrl(outfit.image_url)}

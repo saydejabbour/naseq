@@ -18,13 +18,28 @@ router.get("/", (req, res) => {
       st.style,
       st.season,
       st.occasion,
-     st.image_url,
-st.stylist_id AS stylist_id,
-COALESCE(sp.name, u.full_name) AS stylist,
-sp.profile_photo
+      st.image_url,
+      st.stylist_id AS stylist_id,
+      COALESCE(sp.name, u.full_name) AS stylist,
+      sp.profile_photo,
+      COUNT(saved.saved_id) AS save_count
     FROM stylist_templates st
     JOIN stylist_profiles sp ON st.stylist_id = sp.stylist_id
     JOIN users u ON sp.user_id = u.user_id
+    LEFT JOIN saved_templates saved 
+      ON st.template_id = saved.template_id
+    GROUP BY
+      st.template_id,
+      st.title,
+      st.style,
+      st.season,
+      st.occasion,
+      st.image_url,
+      st.stylist_id,
+      sp.name,
+      u.full_name,
+      sp.profile_photo
+    ORDER BY save_count DESC
   `;
 
   db.query(query, (err, results) => {
@@ -84,13 +99,28 @@ router.get("/template/:id", (req, res) => {
       st.season,
       st.occasion,
       st.image_url,
-st.stylist_id AS stylist_id,
-COALESCE(sp.name, u.full_name) AS stylist,
-sp.profile_photo
+      st.stylist_id AS stylist_id,
+      COALESCE(sp.name, u.full_name) AS stylist,
+      sp.profile_photo,
+      COUNT(saved.saved_id) AS save_count
     FROM stylist_templates st
     JOIN stylist_profiles sp ON st.stylist_id = sp.stylist_id
     JOIN users u ON sp.user_id = u.user_id
+    LEFT JOIN saved_templates saved 
+      ON st.template_id = saved.template_id
     WHERE st.template_id = ?
+    GROUP BY
+      st.template_id,
+      st.title,
+      st.description,
+      st.style,
+      st.season,
+      st.occasion,
+      st.image_url,
+      st.stylist_id,
+      sp.name,
+      u.full_name,
+      sp.profile_photo
   `;
 
   db.query(query, [id], (err, results) => {
