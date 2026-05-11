@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { apiRequest } from "@/services/api";
+import { useToast } from "@/context/ToastContext";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [form, setForm] = useState({
     full_name: "",
@@ -18,7 +20,6 @@ export default function SignupPage() {
 
   const [loading, setLoading] = useState(false);
 
-  // 🔹 HANDLE INPUT CHANGE
   const handleChange = (e) => {
     setForm({
       ...form,
@@ -26,78 +27,68 @@ export default function SignupPage() {
     });
   };
 
-  // 🔹 HANDLE ROLE CHANGE
   const handleRoleChange = (role) => {
     setForm({ ...form, role });
   };
 
-  // 🔥 HANDLE SUBMIT (UPDATED WITH REDIRECT)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async () => {
+  if (loading) return;
 
-    if (!form.full_name || !form.email || !form.password) {
-      alert("Please fill all fields");
-      return;
-    }
+  if (!form.full_name.trim() || !form.email.trim() || !form.password.trim()) {
+    alert("Please fill all fields");
+    return;
+  }
 
-    if (form.password !== form.confirmPassword) {
-      alert("Passwords do not match");
-      return;
-    }
+  if (form.password !== form.confirmPassword) {
+    alert("Passwords do not match");
+    return;
+  }
 
+  try {
     setLoading(true);
 
     const res = await apiRequest("/auth/register", "POST", {
-      full_name: form.full_name,
-      email: form.email,
+      full_name: form.full_name.trim(),
+      email: form.email.trim(),
       password: form.password,
       role: form.role,
     });
 
-    setLoading(false);
-
-    if (res.success) {
-      alert("Account created successfully!");
-
-      // 🔥 SMART REDIRECT BASED ON ROLE
-      if (form.role === "member") {
-        router.push("/member");
-      } else if (form.role === "stylist") {
-        router.push("/stylistapp");
-      }
-
-    } else {
-      alert(res.message);
+    if (!res?.success) {
+      alert(res?.message || "Signup failed");
+      return;
     }
-  };
 
+    alert(res?.message || "Account created. Please verify your email.");
+
+    if (form.role === "member") {
+      router.push("/member");
+    } else {
+      router.push("/stylistapp");
+    }
+  } catch (error) {
+    console.error("SIGNUP ERROR:", error);
+    alert("Something went wrong. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="h-screen flex items-center justify-center bg-[#FDF8F3] overflow-hidden">
-
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
-
-        {/* LOGO */}
         <div className="flex justify-center mb-3">
-          <Image
-            src="/logo.png"
-            alt="Naseq Logo"
-            width={70}
-            height={50}
-          />
+          <Image src="/logo.png" alt="Naseq Logo" width={70} height={50} />
         </div>
 
-        {/* TITLE */}
         <h2 className="text-2xl font-semibold text-center text-[#2F3E34]">
           Welcome Back
         </h2>
+
         <p className="text-center text-sm text-gray-500 mb-4">
           Sign up to your account
         </p>
 
-        {/* FORM */}
-        <form onSubmit={handleSubmit} className="space-y-3">
-
-          {/* FULL NAME */}
+        <form className="space-y-3">
           <div>
             <label className="text-sm text-gray-600">Full Name</label>
             <input
@@ -110,7 +101,6 @@ export default function SignupPage() {
             />
           </div>
 
-          {/* EMAIL */}
           <div>
             <label className="text-sm text-gray-600">Email</label>
             <input
@@ -123,7 +113,6 @@ export default function SignupPage() {
             />
           </div>
 
-          {/* PASSWORD */}
           <div>
             <label className="text-sm text-gray-600">Password</label>
             <input
@@ -136,7 +125,6 @@ export default function SignupPage() {
             />
           </div>
 
-          {/* CONFIRM PASSWORD */}
           <div>
             <label className="text-sm text-gray-600">Confirm Password</label>
             <input
@@ -149,7 +137,6 @@ export default function SignupPage() {
             />
           </div>
 
-          {/* ROLE */}
           <div>
             <label className="text-sm text-gray-600 block mb-1">Role</label>
 
@@ -174,17 +161,15 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {/* BUTTON */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#7CB98B] text-white py-2.5 rounded-lg hover:opacity-90 transition mt-2"
-          >
-            {loading ? "Creating..." : "Create Account"}
-          </button>
+       <button
+  type="button"
+  onClick={handleSubmit}
+  className="w-full bg-[#7CB98B] text-white py-2.5 rounded-lg hover:opacity-90 transition mt-2"
+>
+  Create Account
+</button>
         </form>
 
-        {/* FOOTER */}
         <p className="text-center text-sm mt-4">
           Already have an account?{" "}
           <span

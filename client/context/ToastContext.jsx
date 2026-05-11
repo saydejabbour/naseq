@@ -23,7 +23,10 @@ export function ToastProvider({ children, duration = 3000 }) {
     (text, type = "success") => {
       if (timerRef.current) clearTimeout(timerRef.current);
 
-      setToast({ text, type });
+      setToast({
+        text: text || "Something happened",
+        type,
+      });
 
       timerRef.current = setTimeout(() => {
         setToast(null);
@@ -33,37 +36,41 @@ export function ToastProvider({ children, duration = 3000 }) {
     [duration]
   );
 
-  const config = toast ? (TOAST_CONFIG[toast.type] ?? TOAST_CONFIG.success) : null;
+  const config = toast ? TOAST_CONFIG[toast.type] || TOAST_CONFIG.success : null;
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
 
-      <style>{`
-        @keyframes toast-in {
-          from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-      `}</style>
-
       {toast && config && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed top-6 left-1/2 z-[9999]"
-          style={{ animation: "toast-in 0.2s ease-out forwards" }}
-        >
+        <div className="fixed top-6 left-0 right-0 z-[999999] flex justify-center pointer-events-none">
           <div
+            role="status"
+            aria-live="polite"
             className={`
               flex items-center gap-2
-              px-5 py-3 rounded-lg shadow-md text-sm font-medium
+              px-5 py-3 rounded-xl shadow-lg text-sm font-medium
               pointer-events-auto
+              animate-[toastIn_0.2s_ease-out]
               ${config.className}
             `}
           >
             <span aria-hidden="true">{config.icon}</span>
-            {toast.text}
+            <span>{toast.text}</span>
           </div>
+
+          <style jsx>{`
+            @keyframes toastIn {
+              from {
+                opacity: 0;
+                transform: translateY(-8px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}</style>
         </div>
       )}
     </ToastContext.Provider>
@@ -72,6 +79,12 @@ export function ToastProvider({ children, duration = 3000 }) {
 
 export function useToast() {
   const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used within a <ToastProvider>");
+
+  if (!ctx) {
+    return {
+      showToast: (text) => alert(text),
+    };
+  }
+
   return ctx;
 }
