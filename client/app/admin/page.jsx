@@ -87,8 +87,8 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
-        <UserGrowthChart />
-        <OutfitsBarChart />
+       <UserGrowthChart data={stats?.userGrowth || []} />
+       <OutfitsBarChart data={stats?.outfitsPerMonth || []} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
