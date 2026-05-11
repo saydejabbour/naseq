@@ -10,17 +10,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const data = [
-  { month: "Jan", outfits: 180 },
-  { month: "Feb", outfits: 240 },
-  { month: "Mar", outfits: 300 },
-  { month: "Apr", outfits: 420 },
-  { month: "May", outfits: 520 },
-  { month: "Jun", outfits: 610 },
-  { month: "Jul", outfits: 720 },
-];
-
-export default function OutfitsBarChart() {
+export default function OutfitsBarChart({ data = [] }) {
   return (
     <div className="bg-white rounded-3xl border border-[#E8DED2] p-6 shadow-sm h-[400px]">
       <div className="flex items-start justify-between mb-8">
@@ -35,17 +25,13 @@ export default function OutfitsBarChart() {
         </div>
 
         <div className="bg-[#FFF1E3] text-[#F5A962] px-4 py-2 rounded-full text-sm font-semibold">
-          This Year
+          Real Data
         </div>
       </div>
 
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={data}>
-          <CartesianGrid
-            strokeDasharray="4 4"
-            vertical={false}
-            stroke="#ECE7E1"
-          />
+          <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#ECE7E1" />
 
           <XAxis
             dataKey="month"
@@ -58,6 +44,7 @@ export default function OutfitsBarChart() {
             tick={{ fill: "#9B948B", fontSize: 14 }}
             axisLine={false}
             tickLine={false}
+            allowDecimals={false}
           />
 
           <Tooltip
@@ -68,12 +55,7 @@ export default function OutfitsBarChart() {
             }}
           />
 
-          <Bar
-            dataKey="outfits"
-            fill="#F5A962"
-            radius={[14, 14, 0, 0]}
-            barSize={34}
-          />
+          <Bar dataKey="outfits" fill="#F5A962" radius={[14, 14, 0, 0]} barSize={34} />
         </BarChart>
       </ResponsiveContainer>
     </div>

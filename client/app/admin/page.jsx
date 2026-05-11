@@ -53,6 +53,7 @@ export default function AdminDashboardPage() {
         <p className="text-[#9B948B] text-lg">
           Monitor users, outfits, saves, and platform activity.
         </p>
+        
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
