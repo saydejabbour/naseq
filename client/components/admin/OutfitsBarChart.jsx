@@ -20,7 +20,7 @@ export default function OutfitsBarChart({ data = [] }) {
           </h2>
 
           <p className="text-[#9B948B] text-lg">
-            Weekly registered users
+           Monthly registered users
           </p>
         </div>
 

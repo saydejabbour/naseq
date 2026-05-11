@@ -92,8 +92,8 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <TopCategories />
-        <TrendingOutfits />
+        <TopCategories data={stats?.topCategories || []} />
+        <TrendingOutfits data={stats?.trendingOutfits || []} />
       </div>
     </div>
   );
