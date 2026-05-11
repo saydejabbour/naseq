@@ -76,19 +76,34 @@ export const getAdminDashboardStats = async (req, res) => {
     }));
 
     // TRENDING OUTFITS FROM REAL SAVED TEMPLATES
-    const [trendingOutfits] = await db.promise().query(`
-      SELECT 
-        st.template_id,
-        st.title,
-        st.image_url,
-        COUNT(saved.template_id) AS saves
-      FROM saved_templates saved
-      JOIN stylist_templates st 
-        ON saved.template_id = st.template_id
-      GROUP BY st.template_id, st.title, st.image_url
-      ORDER BY saves DESC
-      LIMIT 5
-    `);
+   const [trendingOutfits] = await db.promise().query(`
+  SELECT 
+    st.template_id,
+    st.title,
+    st.style,
+    st.season,
+    st.occasion,
+    st.image_url,
+    u.full_name AS stylist_name,
+    COUNT(saved.saved_id) AS saves
+  FROM saved_templates saved
+  JOIN stylist_templates st 
+    ON saved.template_id = st.template_id
+  LEFT JOIN stylist_profiles sp
+    ON st.stylist_id = sp.stylist_id
+  LEFT JOIN users u
+    ON sp.user_id = u.user_id
+  GROUP BY 
+    st.template_id,
+    st.title,
+    st.style,
+    st.season,
+    st.occasion,
+    st.image_url,
+    u.full_name
+  ORDER BY saves DESC
+  LIMIT 4
+`);
 
     res.json({
       success: true,
