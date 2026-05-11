@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { PlusCircle, LayoutGrid, ArrowRight } from "lucide-react";
+import AnnouncementCard from "@/components/AnnouncementCard";
 
 const cards = [
   {
@@ -100,6 +101,7 @@ export default function StylistDashboard() {
               </Link>
             );
           })}
+          <AnnouncementCard role="stylist" />
         </div>
       </div>
 

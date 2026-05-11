@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import AnnouncementCard from "@/components/AnnouncementCard";
 
 /* ✅ LUCIDE ICONS */
 import {
@@ -156,6 +157,8 @@ export default function MemberDashboard() {
             </div>
           );
         })}
+
+        <AnnouncementCard role="member" />
       </div>
 
     </div>
