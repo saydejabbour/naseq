@@ -12,7 +12,7 @@ import stylistRoutes from "./routes/stylistRoutes.js";
 import savedTemplatesRoutes from "./routes/savedTemplatesRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
-
+import announcementRoutes from "./routes/announcementRoutes.js";
 
 dotenv.config();
 
@@ -40,6 +40,7 @@ app.use("/api/stylist", stylistRoutes);
 app.use("/api/saved-templates", savedTemplatesRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/admin-dashboard", adminDashboardRoutes);
+app.use("/api/announcements", announcementRoutes);
 
 // 🔥 SERVER START
 const PORT = process.env.PORT || 5000;
