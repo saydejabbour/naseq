@@ -10,20 +10,9 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const data = [
-  { month: "Jan", users: 420 },
-  { month: "Feb", users: 560 },
-  { month: "Mar", users: 690 },
-  { month: "Apr", users: 780 },
-  { month: "May", users: 910 },
-  { month: "Jun", users: 1050 },
-  { month: "Jul", users: 1240 },
-];
-
-export default function UserGrowthChart() {
+export default function UserGrowthChart({ data = [] }) {
   return (
     <div className="bg-white rounded-3xl border border-[#E8DED2] p-6 shadow-sm h-[400px]">
-      {/* HEADER */}
       <div className="flex items-start justify-between mb-8">
         <div>
           <h2 className="text-[34px] font-bold text-[#2F3E34]">
@@ -36,11 +25,10 @@ export default function UserGrowthChart() {
         </div>
 
         <div className="bg-[#EAF6EE] text-[#7CB98B] px-4 py-2 rounded-full text-sm font-semibold">
-          Last 7 months
+          Real Data
         </div>
       </div>
 
-      {/* CHART */}
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={data}>
           <CartesianGrid
@@ -60,6 +48,7 @@ export default function UserGrowthChart() {
             tick={{ fill: "#9B948B", fontSize: 14 }}
             axisLine={false}
             tickLine={false}
+            allowDecimals={false}
           />
 
           <Tooltip

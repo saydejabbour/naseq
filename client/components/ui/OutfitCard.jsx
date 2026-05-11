@@ -68,9 +68,9 @@ export default function OutfitCard({
         {outfit.title || outfit.name}
       </h3>
 
-      {/* STYLIST / USER */}
+      {/* USER */}
       <p className="text-sm text-green-700">
-        {outfit.stylist_name || "You"}
+        {outfit.stylist_name || outfit.stylist || "You"}
       </p>
 
       {/* TAGS */}
