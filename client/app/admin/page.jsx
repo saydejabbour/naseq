@@ -53,7 +53,6 @@ export default function AdminDashboardPage() {
         <p className="text-[#9B948B] text-lg">
           Monitor users, outfits, saves, and platform activity.
         </p>
-        
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
@@ -88,8 +87,8 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
-        <UserGrowthChart data={stats?.userGrowth || []} />
-        <OutfitsBarChart data={stats?.outfitsPerMonth || []} />
+        <UserGrowthChart />
+        <OutfitsBarChart />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">

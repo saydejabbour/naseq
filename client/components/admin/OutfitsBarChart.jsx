@@ -20,13 +20,10 @@ export default function OutfitsBarChart({ data = [] }) {
           </h2>
 
           <p className="text-[#9B948B] text-lg">
-            Monthly outfit generation
+            Weekly registered users
           </p>
         </div>
 
-        <div className="bg-[#FFF1E3] text-[#F5A962] px-4 py-2 rounded-full text-sm font-semibold">
-          Real Data
-        </div>
       </div>
 
       <ResponsiveContainer width="100%" height={280}>

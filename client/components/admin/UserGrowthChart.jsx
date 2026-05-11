@@ -20,13 +20,11 @@ export default function UserGrowthChart({ data = [] }) {
           </h2>
 
           <p className="text-[#9B948B] text-lg">
-            Monthly registered users
+            Weekly registered users
           </p>
         </div>
 
-        <div className="bg-[#EAF6EE] text-[#7CB98B] px-4 py-2 rounded-full text-sm font-semibold">
-          Real Data
-        </div>
+       
       </div>
 
       <ResponsiveContainer width="100%" height={280}>
