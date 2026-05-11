@@ -11,6 +11,7 @@ import contactRoutes from "./routes/contact.js";
 import stylistRoutes from "./routes/stylistRoutes.js";
 import savedTemplatesRoutes from "./routes/savedTemplatesRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import adminDashboardRoutes from "./routes/adminDashboardRoutes.js";
 
 
 dotenv.config();
@@ -38,6 +39,7 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/stylist", stylistRoutes);
 app.use("/api/saved-templates", savedTemplatesRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/admin-dashboard", adminDashboardRoutes);
 
 // 🔥 SERVER START
 const PORT = process.env.PORT || 5000;
