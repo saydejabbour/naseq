@@ -23,6 +23,41 @@ export const getAnnouncements = async (req, res) => {
   }
 };
 
+// ================= DISMISS ANNOUNCEMENT FOR USER =================
+export const dismissAnnouncement = async (req, res) => {
+  try {
+    const { announcement_id, user_id } = req.body;
+
+    if (!announcement_id || !user_id) {
+      return res.status(400).json({
+        success: false,
+        message: "announcement_id and user_id are required",
+      });
+    }
+
+    await db.promise().query(
+      `
+      INSERT IGNORE INTO announcement_dismissals
+      (announcement_id, user_id)
+      VALUES (?, ?)
+      `,
+      [announcement_id, user_id]
+    );
+
+    res.json({
+      success: true,
+      message: "Announcement dismissed",
+    });
+  } catch (error) {
+    console.log("DISMISS ANNOUNCEMENT ERROR:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
 // ================= CREATE ANNOUNCEMENT =================
 export const createAnnouncement = async (req, res) => {
   try {

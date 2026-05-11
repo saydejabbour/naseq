@@ -1,6 +1,6 @@
 const BASE_URL = "http://localhost:5000";
 
-export default function TrendingOutfits({ data = [] }) {
+export default function TrendingOutfits({ data = [], onAnnounce }) {
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return "/placeholder.png";
     if (imageUrl.startsWith("http")) return imageUrl;
@@ -49,6 +49,15 @@ export default function TrendingOutfits({ data = [] }) {
                   <p className="text-xs text-[#F5A962] font-bold">
                     {outfit.saves} save{outfit.saves > 1 ? "s" : ""}
                   </p>
+
+                  {onAnnounce && (
+  <button
+    onClick={() => onAnnounce(outfit)}
+    className="mt-2 px-3 py-1.5 rounded-xl bg-[#FFF1E3] text-[#F5A962] text-xs font-semibold hover:bg-[#F5A962] hover:text-white transition"
+  >
+    Announce
+  </button>
+)}
                 </div>
               </div>
 

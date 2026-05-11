@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Megaphone } from "lucide-react";
+
+import { Megaphone, X } from "lucide-react";
 
 const API_URL = "http://localhost:5000/api/announcements";
 
@@ -31,6 +32,33 @@ export default function AnnouncementCard({ role = "member" }) {
     }
   };
 
+  const handleDismiss = async (announcementId) => {
+  try {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+
+    if (!storedUser?.user_id) return;
+
+    await fetch(`${API_URL}/dismiss`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        announcement_id: announcementId,
+        user_id: storedUser.user_id,
+      }),
+    });
+
+    setAnnouncements((prev) =>
+      prev.filter(
+        (item) => item.announcement_id !== announcementId
+      )
+    );
+  } catch (error) {
+    console.log("Dismiss error:", error);
+  }
+};
+
   if (announcements.length === 0) {
     return null;
   }
@@ -55,9 +83,15 @@ export default function AnnouncementCard({ role = "member" }) {
       <div className="space-y-4">
         {announcements.map((item) => (
           <div
-            key={item.announcement_id}
-            className="rounded-2xl bg-[#FDF8F3] border border-[#E8DED2] p-4"
-          >
+  key={item.announcement_id}
+  className="rounded-2xl bg-[#FDF8F3] border border-[#E8DED2] p-4 relative"
+>
+<button
+  onClick={() => handleDismiss(item.announcement_id)}
+  className="absolute top-3 right-3 w-8 h-8 rounded-full hover:bg-[#EFE7DD] flex items-center justify-center transition"
+>
+  <X size={16} className="text-[#9B948B]" />
+</button>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs px-3 py-1 rounded-full bg-[#EAF6EE] text-[#7CB98B] font-semibold capitalize">
                 {item.type}

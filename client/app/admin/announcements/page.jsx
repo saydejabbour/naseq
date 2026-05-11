@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 const API_URL = "http://localhost:5000/api/announcements";
 
@@ -13,6 +14,24 @@ export default function AdminAnnouncementsPage() {
     target_role: "all",
     type: "info",
   });
+
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+  const title = searchParams.get("title");
+  const message = searchParams.get("message");
+  const target_role = searchParams.get("target_role");
+  const type = searchParams.get("type");
+
+  if (title || message) {
+    setForm({
+      title: title || "",
+      message: message || "",
+      target_role: target_role || "all",
+      type: type || "info",
+    });
+  }
+}, [searchParams]);
 
   const fetchAnnouncements = async () => {
     const res = await fetch(API_URL);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Users, Shirt, Heart, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import StatCard from "@/components/admin/StatCard";
 import UserGrowthChart from "@/components/admin/UserGrowthChart";
@@ -14,6 +15,7 @@ const API_URL = "http://localhost:5000/api/admin-dashboard";
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     fetchDashboardStats();
@@ -44,6 +46,30 @@ export default function AdminDashboardPage() {
     );
   }
 
+  const announcePopularStyle = () => {
+  const title = "Popular Style of the Month";
+  const message = `${stats?.mostPopularStyle} is currently the most popular style on Naseq.`;
+
+  router.push(
+    `/admin/announcements?title=${encodeURIComponent(
+      title
+    )}&message=${encodeURIComponent(message)}&target_role=all&type=highlight`
+  );
+};
+
+const announceTrendingOutfit = (outfit) => {
+  const title = "Trending Outfit of the Month";
+  const message = `${outfit.title} by ${
+    outfit.stylist_name || "a Naseq stylist"
+  } is one of the most saved outfits on Naseq.`;
+
+  router.push(
+    `/admin/announcements?title=${encodeURIComponent(
+      title
+    )}&message=${encodeURIComponent(message)}&target_role=all&type=highlight`
+  );
+};
+
   return (
     <div className="min-h-screen bg-[#FDF8F3] px-8 py-8">
       <div className="mb-8">
@@ -71,11 +97,19 @@ export default function AdminDashboardPage() {
           accent="orange"
         />
 
-        <StatCard
-          icon={<Sparkles size={24} />}
-          title="Popular Style"
-          value={stats?.mostPopularStyle || "No Data"}
-        />
+       <StatCard
+  icon={<Sparkles size={24} />}
+  title="Popular Style"
+  value={stats?.mostPopularStyle || "No Data"}
+  action={
+    <button
+    onClick={announcePopularStyle}
+    className="px-4 py-2 rounded-full bg-[#FFF1E3] text-[#F5A962] font-semibold text-sm hover:bg-[#F5A962] hover:text-white transition"
+  >
+      Announce This Style
+    </button>
+  }
+/>
 
         <StatCard
           icon={<Heart size={24} />}
@@ -93,7 +127,10 @@ export default function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         <TopCategories data={stats?.topCategories || []} />
-        <TrendingOutfits data={stats?.trendingOutfits || []} />
+        <TrendingOutfits
+  data={stats?.trendingOutfits || []}
+  onAnnounce={announceTrendingOutfit}
+/>
       </div>
     </div>
   );
