@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { showToast } = useToast();
   const router = useRouter();
-
 
   const [form, setForm] = useState({
     email: "",
@@ -16,63 +17,64 @@ export default function LoginPage() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  // 🔹 HANDLE INPUT CHANGE
   const handleChange = (e) => {
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
   };
 
-  // 🔥 LOGIN HANDLER
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.email || !form.password) {
-      setError("Please fill all fields");
+    if (loading) return;
+
+    if (!form.email.trim() || !form.password.trim()) {
+      showToast("Please fill all fields", "error");
       return;
     }
 
-    setError("");
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const res = await login(form.email, form.password);
-    console.log("LOGIN RESPONSE:", res);
+      const res = await login(form.email.trim(), form.password);
+      console.log("LOGIN RESPONSE:", res);
 
-    setLoading(false);
-
-    if (res.success) {
-      // 🔥 ROLE-BASED REDIRECT
-      if (res.user.role === "member") {
-        router.push("/member");
-      } else if (res.user.role === "stylist") {
-        router.push("/stylist");
-      } else {
-        router.push("/");
+      if (!res.success) {
+        showToast(res.message || "Invalid email or password", "error");
+        return;
       }
-    } else {
-      setError(res.message || "Login failed");
-    } 
 
+      showToast("Login successful", "success");
+
+      setTimeout(() => {
+        if (res.user.role === "member") {
+          router.push("/member");
+        } else if (res.user.role === "stylist") {
+          router.push("/stylist");
+        } else if (res.user.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
+      }, 500);
+    } catch (error) {
+      console.error("LOGIN ERROR:", error);
+      showToast("Something went wrong. Please try again.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
       <div className="w-full flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] p-10">
-
-          {/* LOGO */}
           <div className="flex justify-center mb-5">
-            <img
-              src="/logo.png"
-              alt="Naseq"
-              className="w-28 object-contain"
-            />
+            <img src="/logo.png" alt="Naseq" className="w-28 object-contain" />
           </div>
 
-          {/* TITLE */}
           <h2 className="text-2xl font-semibold text-center text-[#2D3A3A] mb-1">
             Welcome Back
           </h2>
@@ -81,21 +83,9 @@ export default function LoginPage() {
             Sign in to your account
           </p>
 
-          {/* ERROR */}
-          {error && (
-            <p className="text-red-500 text-sm text-center mb-4">
-              {error}
-            </p>
-          )}
-
-          {/* FORM */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-
-            {/* EMAIL */}
             <div>
-              <label className="text-sm text-gray-700 mb-1 block">
-                Email
-              </label>
+              <label className="text-sm text-gray-700 mb-1 block">Email</label>
               <input
                 type="email"
                 name="email"
@@ -107,12 +97,9 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* PASSWORD */}
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-sm text-gray-700">
-                  Password
-                </label>
+                <label className="text-sm text-gray-700">Password</label>
 
                 <Link
                   href="/reset-password"
@@ -133,25 +120,20 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* BUTTON */}
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3.5 rounded-xl mt-2 text-sm font-medium transition 
-              ${
+              className={`w-full py-3.5 rounded-xl mt-2 text-sm font-medium transition ${
                 loading
-                  ? "bg-gray-400 cursor-not-allowed"
+                  ? "bg-gray-400 cursor-not-allowed text-white"
                   : "bg-[#7CB98B] hover:bg-[#6aa87a] text-white"
               }`}
             >
               {loading ? "Logging in..." : "Login"}
             </button>
-
           </form>
 
-          {/* BOTTOM TEXT */}
           <div className="text-center mt-8 text-sm">
-
             <p className="text-gray-600">
               Don’t have an account?{" "}
               <Link href="/signup" className="text-[#7CB98B] hover:underline">
@@ -159,7 +141,6 @@ export default function LoginPage() {
               </Link>
             </p>
 
-            {/* 🔥 FIXED APPLY LINK */}
             <p className="mt-2 text-gray-700">
               Are you a stylist?{" "}
               <Link
@@ -169,9 +150,7 @@ export default function LoginPage() {
                 Apply here
               </Link>
             </p>
-
           </div>
-
         </div>
       </div>
     </div>

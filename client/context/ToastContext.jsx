@@ -4,14 +4,24 @@ import { createContext, useCallback, useContext, useRef, useState } from "react"
 
 const ToastContext = createContext(null);
 
-const TOAST_CONFIG = {
+const colors = {
   success: {
-    className: "bg-green-50 text-green-800 border border-green-200",
+    bg: "#ECFDF3",
+    text: "#2F3E34",
+    border: "#7CB98B",
     icon: "✓",
   },
   error: {
-    className: "bg-red-50 text-red-800 border border-red-200",
+    bg: "#FEF2F2",
+    text: "#991B1B",
+    border: "#FCA5A5",
     icon: "✕",
+  },
+  warning: {
+    bg: "#FFF7ED",
+    text: "#9A3412",
+    border: "#FDBA74",
+    icon: "!",
   },
 };
 
@@ -21,6 +31,8 @@ export function ToastProvider({ children, duration = 3000 }) {
 
   const showToast = useCallback(
     (text, type = "success") => {
+      console.log("SHOW TOAST:", text, type);
+
       if (timerRef.current) clearTimeout(timerRef.current);
 
       setToast({
@@ -36,41 +48,61 @@ export function ToastProvider({ children, duration = 3000 }) {
     [duration]
   );
 
-  const config = toast ? TOAST_CONFIG[toast.type] || TOAST_CONFIG.success : null;
+  const config = toast ? colors[toast.type] || colors.success : null;
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
 
       {toast && config && (
-        <div className="fixed top-6 left-0 right-0 z-[999999] flex justify-center pointer-events-none">
+        <div
+          style={{
+            position: "fixed",
+            top: "24px",
+            left: "0",
+            right: "0",
+            zIndex: 999999999,
+            display: "flex",
+            justifyContent: "center",
+            padding: "0 16px",
+            pointerEvents: "none",
+          }}
+        >
           <div
-            role="status"
-            aria-live="polite"
-            className={`
-              flex items-center gap-2
-              px-5 py-3 rounded-xl shadow-lg text-sm font-medium
-              pointer-events-auto
-              animate-[toastIn_0.2s_ease-out]
-              ${config.className}
-            `}
+            style={{
+              minWidth: "280px",
+              maxWidth: "420px",
+              background: config.bg,
+              color: config.text,
+              border: `1px solid ${config.border}`,
+              borderRadius: "16px",
+              padding: "12px 20px",
+              boxShadow: "0 15px 40px rgba(0,0,0,0.18)",
+              fontSize: "14px",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              pointerEvents: "auto",
+            }}
           >
-            <span aria-hidden="true">{config.icon}</span>
+            <span
+              style={{
+                width: "24px",
+                height: "24px",
+                borderRadius: "999px",
+                background: "rgba(255,255,255,0.75)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+              }}
+            >
+              {config.icon}
+            </span>
+
             <span>{toast.text}</span>
           </div>
-
-          <style jsx>{`
-            @keyframes toastIn {
-              from {
-                opacity: 0;
-                transform: translateY(-8px);
-              }
-              to {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-          `}</style>
         </div>
       )}
     </ToastContext.Provider>
@@ -81,9 +113,7 @@ export function useToast() {
   const ctx = useContext(ToastContext);
 
   if (!ctx) {
-    return {
-      showToast: (text) => alert(text),
-    };
+    throw new Error("useToast must be used inside ToastProvider");
   }
 
   return ctx;
