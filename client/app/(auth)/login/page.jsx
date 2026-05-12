@@ -50,14 +50,22 @@ export default function LoginPage() {
 
       setTimeout(() => {
         if (res.user.role === "member") {
-          router.push("/member");
-        } else if (res.user.role === "stylist") {
-          router.push("/stylist");
-        } else if (res.user.role === "admin") {
-          router.push("/admin");
-        } else {
-          router.push("/");
-        }
+  router.push("/member");
+} else if (res.user.role === "stylist") {
+  if (res.user.stylist_status === "approved") {
+    router.push("/stylist");
+  } else if (res.user.stylist_status === "pending") {
+    router.push("/stylist/pending");
+  } else if (res.user.stylist_status === "rejected") {
+    router.push("/stylist/rejected");
+  } else {
+    router.push("/login");
+  }
+} else if (res.user.role === "admin") {
+  router.push("/admin");
+} else {
+  router.push("/");
+}
       }, 500);
     } catch (error) {
       console.error("LOGIN ERROR:", error);

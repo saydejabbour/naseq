@@ -66,10 +66,16 @@ router.patch("/admin/stylist-accounts/:application_id/status", async (req, res) 
       [status, application_id]
     );
 
-    await db.promise().query(
-      `UPDATE users SET role = ? WHERE user_id = ?`,
-      [status === "Approved" ? "stylist" : "member", userId]
-    );
+   await db.promise().query(
+  `UPDATE users 
+   SET role = ?, stylist_status = ?
+   WHERE user_id = ?`,
+  [
+    "stylist",
+    status.toLowerCase(),
+    userId,
+  ]
+);
 
     return res.json({
       success: true,

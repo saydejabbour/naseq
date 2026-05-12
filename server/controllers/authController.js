@@ -22,26 +22,49 @@ export const register = async (req, res) => {
 
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
+
         const userRole = role || "member";
+        const stylistStatus = userRole === "stylist" ? "pending" : null;
 
         const verificationToken = crypto.randomBytes(32).toString("hex");
         const verificationExpires = new Date(Date.now() + 60 * 60 * 1000);
 
         db.query(
           `INSERT INTO users 
-          (full_name, email, password_hash, role, is_verified, verification_token, verification_expires) 
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          (full_name, email, password_hash, role, stylist_status, is_verified, verification_token, verification_expires) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             full_name,
             email,
             hashedPassword,
             userRole,
+            stylistStatus,
             false,
             verificationToken,
             verificationExpires,
           ],
-          async (err) => {
-            if (err) return errorResponse(res, "Failed to register user");
+          async (err, insertResult) => {
+            if (err) {
+              console.error("REGISTER ERROR:", err);
+              return errorResponse(res, "Failed to register user");
+            }
+
+            const newUserId = insertResult.insertId;
+
+            if (userRole === "stylist") {
+              await db.promise().query(
+                `INSERT INTO stylist_profiles 
+                 (user_id, name, bio, profile_photo, status)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [
+                  newUserId,
+                  full_name,
+                  "",
+                  "",
+                  "Pending",
+                ]
+              );
+            }
 
             const verifyLink = `http://localhost:5000/api/auth/verify/${verificationToken}`;
 
@@ -56,17 +79,21 @@ export const register = async (req, res) => {
                 <p>This link expires in 1 hour.</p>
                 `
               );
-
-              console.log("✅ VERIFICATION EMAIL SENT TO:", email);
             } catch (emailError) {
               console.error("❌ EMAIL FAILED:", emailError);
             }
 
-            return successResponse(res, "Account created. Please verify your email.");
+            return successResponse(
+              res,
+              userRole === "stylist"
+                ? "Account created. After email verification, your stylist account will be pending admin approval."
+                : "Account created. Please verify your email."
+            );
           }
         );
       } catch (hashError) {
-        return errorResponse(res, "Password hashing failed");
+        console.error("REGISTER HASH/PROFILE ERROR:", hashError);
+        return errorResponse(res, "Registration failed");
       }
     });
   } catch (error) {
@@ -118,17 +145,17 @@ export const login = (req, res) => {
     return errorResponse(res, "Email and password are required", 400);
   }
 
- const query = `
-  SELECT
-    u.*,
-    sp.profile_photo
-  FROM users u
-  LEFT JOIN stylist_profiles sp
-    ON u.user_id = sp.user_id
-  WHERE u.email = ?
-`;
+  const query = `
+    SELECT
+      u.*,
+      sp.profile_photo
+    FROM users u
+    LEFT JOIN stylist_profiles sp
+      ON u.user_id = sp.user_id
+    WHERE u.email = ?
+  `;
 
-db.query(query, [email], async (err, results) => {
+  db.query(query, [email], async (err, results) => {
     if (err) return errorResponse(res, "Database error");
 
     if (results.length === 0) {
@@ -148,12 +175,13 @@ db.query(query, [email], async (err, results) => {
     }
 
     return successResponse(res, "Login successful", {
-  user_id: user.user_id,
-  full_name: user.full_name,
-  email: user.email,
-  role: user.role,
-  profile_photo: user.profile_photo,
-});
+      user_id: user.user_id,
+      full_name: user.full_name,
+      email: user.email,
+      role: user.role,
+      stylist_status: user.stylist_status,
+      profile_photo: user.profile_photo,
+    });
   });
 };
 

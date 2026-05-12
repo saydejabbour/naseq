@@ -2,28 +2,34 @@
 
 import Sidebar from "@/components/sidebar/Sidebar";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
-
-// ✅ ADD THIS
 import { ToastProvider } from "@/context/ToastContext";
 
 export default function StylistLayout({ children }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
-  // 🔥 PROTECTION LOGIC
+  const isStatusPage =
+    pathname === "/stylist/pending" || pathname === "/stylist/rejected";
+
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
         router.push("/login");
       } else if (user.role !== "stylist") {
         router.push("/");
+      } else if (!isStatusPage && user.stylist_status === "pending") {
+        router.push("/stylist/pending");
+      } else if (!isStatusPage && user.stylist_status === "rejected") {
+        router.push("/stylist/rejected");
+      } else if (!isStatusPage && user.stylist_status !== "approved") {
+        router.push("/login");
       }
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, isStatusPage, router]);
 
-  // 🔥 WAIT FOR AUTH CHECK
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -32,22 +38,20 @@ export default function StylistLayout({ children }) {
     );
   }
 
-  // 🔥 BLOCK RENDER
   if (!user || user.role !== "stylist") return null;
 
-  // ✅ WRAP WITH TOAST PROVIDER
+  if (isStatusPage) {
+    return <ToastProvider>{children}</ToastProvider>;
+  }
+
+  if (user.stylist_status !== "approved") return null;
+
   return (
     <ToastProvider>
       <div className="flex min-h-screen bg-[#FDF8F3]">
-
-        {/* Sidebar */}
         <Sidebar role="stylist" />
 
-        {/* Content */}
-        <main className="flex-1 p-10">
-          {children}
-        </main>
-
+        <main className="flex-1 p-10">{children}</main>
       </div>
     </ToastProvider>
   );
