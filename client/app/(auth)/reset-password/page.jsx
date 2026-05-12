@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/context/ToastContext";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -12,35 +14,37 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email) {
-      alert("Please enter your email");
+    if (loading) return;
+
+    if (!email.trim()) {
+      showToast("Please enter your email", "error");
       return;
     }
 
-    setLoading(true);
-
     try {
+      setLoading(true);
+
       const res = await fetch("http://127.0.0.1:5000/api/auth/forgot-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim() }),
       });
 
       const text = await res.text();
       const data = text ? JSON.parse(text) : {};
 
       if (!res.ok) {
-        alert(data.message || "Server error");
+        showToast(data.message || "Server error", "error");
         return;
       }
 
-      alert(data.message || "Reset link sent to your email");
+      showToast(data.message || "Reset link sent to your email", "success");
       setEmail("");
     } catch (err) {
       console.error("Forgot password error:", err);
-      alert("Server error");
+      showToast("Server error. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -70,6 +74,7 @@ export default function ForgotPasswordPage() {
               placeholder="You@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
               className="w-full bg-[#F7F3F3] rounded-xl px-5 py-3.5 outline-none focus:ring-2 focus:ring-[#7CB98B]"
             />
           </div>
@@ -79,7 +84,7 @@ export default function ForgotPasswordPage() {
             disabled={loading}
             className={`w-full py-3.5 rounded-xl text-sm font-medium transition ${
               loading
-                ? "bg-gray-400 cursor-not-allowed"
+                ? "bg-gray-400 cursor-not-allowed text-white"
                 : "bg-[#7CB98B] hover:bg-[#6aa87a] text-white"
             }`}
           >
@@ -89,7 +94,8 @@ export default function ForgotPasswordPage() {
 
         <div className="mt-6">
           <button
-            onClick={() => router.push("/login")}
+            type="button"
+            onClick={() => !loading && router.push("/login")}
             className="text-sm text-[#7CB98B] hover:underline"
           >
             ← Back To Login

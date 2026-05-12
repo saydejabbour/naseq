@@ -21,58 +21,64 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
   };
 
   const handleRoleChange = (role) => {
-    setForm({ ...form, role });
+    setForm((prev) => ({ ...prev, role }));
   };
 
-const handleSubmit = async () => {
-  if (loading) return;
+  const handleSubmit = async () => {
+    if (loading) return;
 
-  if (!form.full_name.trim() || !form.email.trim() || !form.password.trim()) {
-    alert("Please fill all fields");
-    return;
-  }
-
-  if (form.password !== form.confirmPassword) {
-    alert("Passwords do not match");
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    const res = await apiRequest("/auth/register", "POST", {
-      full_name: form.full_name.trim(),
-      email: form.email.trim(),
-      password: form.password,
-      role: form.role,
-    });
-
-    if (!res?.success) {
-      alert(res?.message || "Signup failed");
+    if (!form.full_name.trim() || !form.email.trim() || !form.password.trim()) {
+      showToast("Please fill all fields", "error");
       return;
     }
 
-    alert(res?.message || "Account created. Please verify your email.");
-
-    if (form.role === "member") {
-      router.push("/member");
-    } else {
-      router.push("/stylistapp");
+    if (form.password !== form.confirmPassword) {
+      showToast("Passwords do not match", "error");
+      return;
     }
-  } catch (error) {
-    console.error("SIGNUP ERROR:", error);
-    alert("Something went wrong. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+
+    try {
+      setLoading(true);
+
+      const res = await apiRequest("/auth/register", "POST", {
+        full_name: form.full_name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: form.role,
+      });
+
+      if (!res?.success) {
+        showToast(res?.message || "Signup failed", "error");
+        return;
+      }
+
+      showToast(
+        res?.message || "Account created. Please verify your email.",
+        "success"
+      );
+
+      setTimeout(() => {
+        if (form.role === "member") {
+          router.push("/member");
+        } else {
+          router.push("/stylistapp");
+        }
+      }, 500);
+    } catch (error) {
+      console.error("SIGNUP ERROR:", error);
+      showToast("Something went wrong. Please try again.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="h-screen flex items-center justify-center bg-[#FDF8F3] overflow-hidden">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
@@ -97,6 +103,7 @@ const handleSubmit = async () => {
               placeholder="Your full name"
               value={form.full_name}
               onChange={handleChange}
+              disabled={loading}
               className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none"
             />
           </div>
@@ -109,6 +116,7 @@ const handleSubmit = async () => {
               placeholder="you@example.com"
               value={form.email}
               onChange={handleChange}
+              disabled={loading}
               className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none"
             />
           </div>
@@ -121,6 +129,7 @@ const handleSubmit = async () => {
               placeholder="********"
               value={form.password}
               onChange={handleChange}
+              disabled={loading}
               className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none"
             />
           </div>
@@ -133,6 +142,7 @@ const handleSubmit = async () => {
               placeholder="********"
               value={form.confirmPassword}
               onChange={handleChange}
+              disabled={loading}
               className="w-full mt-1 px-3 py-2 rounded-lg bg-gray-100 outline-none"
             />
           </div>
@@ -146,6 +156,7 @@ const handleSubmit = async () => {
                   type="radio"
                   checked={form.role === "member"}
                   onChange={() => handleRoleChange("member")}
+                  disabled={loading}
                 />
                 Participant
               </label>
@@ -155,25 +166,31 @@ const handleSubmit = async () => {
                   type="radio"
                   checked={form.role === "stylist"}
                   onChange={() => handleRoleChange("stylist")}
+                  disabled={loading}
                 />
                 Stylist
               </label>
             </div>
           </div>
 
-       <button
-  type="button"
-  onClick={handleSubmit}
-  className="w-full bg-[#7CB98B] text-white py-2.5 rounded-lg hover:opacity-90 transition mt-2"
->
-  Create Account
-</button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            className={`w-full text-white py-2.5 rounded-lg transition mt-2 ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-[#7CB98B] hover:opacity-90"
+            }`}
+          >
+            {loading ? "Creating Account..." : "Create Account"}
+          </button>
         </form>
 
         <p className="text-center text-sm mt-4">
           Already have an account?{" "}
           <span
-            onClick={() => router.push("/login")}
+            onClick={() => !loading && router.push("/login")}
             className="text-green-600 cursor-pointer"
           >
             Login
