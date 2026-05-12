@@ -4,24 +4,30 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 
 export default function StylistApplication() {
   const router = useRouter();
   const { updateUser } = useAuth();
+  const { showToast } = useToast();
 
   const [profileImage, setProfileImage] = useState(null);
   const [portfolioFiles, setPortfolioFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // ✅ ONLY LOGIC ADDED HERE
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (loading) return;
 
     const user = JSON.parse(localStorage.getItem("user"));
 
     if (!user) {
-      alert("You must be logged in");
+      showToast("You must be logged in", "error");
       return;
     }
+
+    setLoading(true);
 
     const updatedUser = {
       ...user,
@@ -32,16 +38,16 @@ export default function StylistApplication() {
 
     updateUser(updatedUser);
 
-    router.push("/member");
+    showToast("Application submitted successfully", "success");
+
+    setTimeout(() => {
+      router.push("/member");
+    }, 500);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F3EDE7] px-4">
-
-      {/* CARD */}
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg px-6 py-5 flex flex-col items-center">
-
-        {/* LOGO */}
         <Image
           src="/logo.png"
           alt="Naseq Logo"
@@ -50,7 +56,6 @@ export default function StylistApplication() {
           className="mb-2"
         />
 
-        {/* TITLE */}
         <h2 className="text-base font-semibold text-gray-800">
           Apply as a Stylist
         </h2>
@@ -59,46 +64,41 @@ export default function StylistApplication() {
           Submit your application to join our stylist community
         </p>
 
-        {/* FORM */}
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-2">
-
-          {/* NAME */}
           <div>
             <label className="text-[11px] text-gray-700">Full Name</label>
             <input
               type="text"
               placeholder="Your full name"
+              disabled={loading}
               className="w-full mt-1 px-3 py-2 text-xs rounded-md bg-gray-100 outline-none"
             />
           </div>
 
-          {/* EMAIL */}
           <div>
             <label className="text-[11px] text-gray-700">Email</label>
             <input
               type="email"
               placeholder="you@example.com"
+              disabled={loading}
               className="w-full mt-1 px-3 py-2 text-xs rounded-md bg-gray-100 outline-none"
             />
           </div>
 
-          {/* BIO */}
           <div>
             <label className="text-[11px] text-gray-700">Short Bio</label>
             <textarea
               placeholder="Tell us about your styling experience..."
+              disabled={loading}
               className="w-full mt-1 px-3 py-2 text-xs rounded-md bg-gray-100 outline-none h-14 resize-none"
             />
           </div>
 
-          {/* PROFILE PHOTO */}
           <div>
             <label className="text-[11px] text-gray-700">Profile Photo</label>
 
             <label className="mt-1 border border-dashed border-gray-300 rounded-md p-3 text-center text-[11px] text-gray-400 cursor-pointer block hover:bg-gray-50">
-
               <div className="flex flex-col items-center gap-1">
-                {/* CAMERA ICON (UNCHANGED) */}
                 <svg
                   width="20"
                   height="20"
@@ -121,19 +121,19 @@ export default function StylistApplication() {
               <input
                 type="file"
                 className="hidden"
+                disabled={loading}
                 onChange={(e) => setProfileImage(e.target.files[0])}
               />
             </label>
           </div>
 
-          {/* PORTFOLIO */}
           <div>
-            <label className="text-[11px] text-gray-700">Portfolio Images</label>
+            <label className="text-[11px] text-gray-700">
+              Portfolio Images
+            </label>
 
             <label className="mt-1 border border-dashed border-gray-300 rounded-md p-3 text-center text-[11px] text-gray-400 cursor-pointer block hover:bg-gray-50">
-
               <div className="flex flex-col items-center gap-1">
-                {/* UPLOAD ICON (UNCHANGED) */}
                 <svg
                   width="20"
                   height="20"
@@ -158,21 +158,23 @@ export default function StylistApplication() {
                 type="file"
                 multiple
                 className="hidden"
-                onChange={(e) =>
-                  setPortfolioFiles(Array.from(e.target.files))
-                }
+                disabled={loading}
+                onChange={(e) => setPortfolioFiles(Array.from(e.target.files))}
               />
             </label>
           </div>
 
-          {/* BUTTON */}
           <button
             type="submit"
-            className="mt-2 bg-[#7CB98B] hover:bg-[#6aa879] text-white py-2 rounded-md text-xs transition"
+            disabled={loading}
+            className={`mt-2 text-white py-2 rounded-md text-xs transition ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-[#7CB98B] hover:bg-[#6aa879]"
+            }`}
           >
-            Submit Application
+            {loading ? "Submitting..." : "Submit Application"}
           </button>
-
         </form>
       </div>
     </div>

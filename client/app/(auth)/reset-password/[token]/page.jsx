@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useToast } from "@/context/ToastContext";
 
 export default function ResetPasswordTokenPage() {
   const { token } = useParams();
   const router = useRouter();
+  const { showToast } = useToast();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -14,19 +16,21 @@ export default function ResetPasswordTokenPage() {
   const handleResetPassword = async (e) => {
     e.preventDefault();
 
-    if (!password || !confirmPassword) {
-      alert("Please fill all fields");
+    if (loading) return;
+
+    if (!password.trim() || !confirmPassword.trim()) {
+      showToast("Please fill all fields", "error");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      showToast("Passwords do not match", "error");
       return;
     }
 
-    setLoading(true);
-
     try {
+      setLoading(true);
+
       const res = await fetch(
         `http://127.0.0.1:5000/api/auth/reset-password/${token}`,
         {
@@ -40,25 +44,28 @@ export default function ResetPasswordTokenPage() {
 
       const text = await res.text();
 
-let data = {};
-try {
-  data = text ? JSON.parse(text) : {};
-} catch {
-  console.log("Backend returned non-JSON:", text);
-  alert("Backend route error. Check reset-password API route.");
-  return;
-}
-
-      if (!res.ok) {
-        alert(data.message || "Failed to reset password");
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        console.log("Backend returned non-JSON:", text);
+        showToast("Backend route error. Check reset-password API route.", "error");
         return;
       }
 
-      alert(data.message || "Password reset successfully");
-      router.push("/login");
+      if (!res.ok) {
+        showToast(data.message || "Failed to reset password", "error");
+        return;
+      }
+
+      showToast(data.message || "Password reset successfully", "success");
+
+      setTimeout(() => {
+        router.push("/login");
+      }, 500);
     } catch (error) {
       console.error("Reset password error:", error);
-      alert("Server error");
+      showToast("Server error. Please try again.", "error");
     } finally {
       setLoading(false);
     }
@@ -90,6 +97,7 @@ try {
               placeholder="Enter new password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
               className="w-full bg-[#F7F3F3] rounded-xl px-5 py-3.5 outline-none focus:ring-2 focus:ring-[#7CB98B]"
             />
           </div>
@@ -104,6 +112,7 @@ try {
               placeholder="Confirm new password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              disabled={loading}
               className="w-full bg-[#F7F3F3] rounded-xl px-5 py-3.5 outline-none focus:ring-2 focus:ring-[#7CB98B]"
             />
           </div>
@@ -113,7 +122,7 @@ try {
             disabled={loading}
             className={`w-full py-3.5 rounded-xl text-sm font-medium transition ${
               loading
-                ? "bg-gray-400 cursor-not-allowed"
+                ? "bg-gray-400 cursor-not-allowed text-white"
                 : "bg-[#7CB98B] hover:bg-[#6aa87a] text-white"
             }`}
           >
@@ -123,7 +132,8 @@ try {
 
         <div className="mt-6">
           <button
-            onClick={() => router.push("/login")}
+            type="button"
+            onClick={() => !loading && router.push("/login")}
             className="text-sm text-[#7CB98B] hover:underline"
           >
             ← Back To Login
