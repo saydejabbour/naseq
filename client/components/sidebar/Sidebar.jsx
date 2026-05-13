@@ -46,6 +46,7 @@ export default function Sidebar({ role }) {
       { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { label: "Stylist Accounts", href: "/admin/stylistaccounts", icon: Users },
       { label: "Announcements", href: "/admin/announcements", icon: MessageCircle },
+      { label: "Contact Messages", href: "/admin/contact-messages", icon: MessageCircle },
     ],
   };
 
