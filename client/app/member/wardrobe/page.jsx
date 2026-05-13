@@ -200,8 +200,13 @@ export default function WardrobePage() {
       )}
 
       {deleteModal.open && (
-  <div className="absolute inset-0 z-[9999] flex items-center justify-center px-4"
-    style={{ background: "rgba(30, 22, 15, 0.45)", backdropFilter: "blur(2px)" }}>
+   <div
+    className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+    style={{
+      background: "rgba(30, 22, 15, 0.45)",
+      backdropFilter: "blur(2px)",
+    }}
+  >
     <div
       className="w-full max-w-sm p-7"
       style={{

@@ -3,11 +3,31 @@ import db from "../config/db.js";
 // ================= GET ALL ANNOUNCEMENTS =================
 export const getAnnouncements = async (req, res) => {
   try {
-    const [results] = await db.promise().query(`
-      SELECT *
-      FROM announcements
-      ORDER BY created_at DESC
-    `);
+    const { user_id } = req.query;
+
+    let query = `
+      SELECT a.*
+      FROM announcements a
+    `;
+
+    const values = [];
+
+    if (user_id) {
+      query += `
+        LEFT JOIN announcement_dismissals d
+          ON a.announcement_id = d.announcement_id
+          AND d.user_id = ?
+        WHERE d.dismissal_id IS NULL
+      `;
+
+      values.push(user_id);
+    }
+
+    query += `
+      ORDER BY a.created_at DESC
+    `;
+
+    const [results] = await db.promise().query(query, values);
 
     res.json({
       success: true,

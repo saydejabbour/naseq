@@ -140,6 +140,31 @@ export const deleteOutfit = (req, res) => {
   });
 };
 
+// ================= RENAME OUTFIT =================
+export const renameOutfit = (req, res) => {
+  const { outfit_id } = req.params;
+  const { name } = req.body;
+
+  if (!name) {
+    return errorResponse(res, "Name is required", 400);
+  }
+
+  const query = `
+    UPDATE outfits
+    SET name = ?
+    WHERE outfit_id = ?
+  `;
+
+  db.query(query, [name, outfit_id], (err) => {
+    if (err) {
+      console.error("❌ Rename error:", err);
+      return errorResponse(res, "Failed to rename outfit");
+    }
+
+    return successResponse(res, "Outfit renamed successfully");
+  });
+};
+
 // ================= GENERATE OUTFITS (NEW FEATURE) =================
 export const generateOutfits = async (req, res) => {
   try {

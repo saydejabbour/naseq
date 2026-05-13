@@ -15,7 +15,11 @@ export default function AnnouncementCard({ role = "member" }) {
 
   const fetchAnnouncements = async () => {
     try {
-      const res = await fetch(API_URL);
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+
+const res = await fetch(
+  `${API_URL}?user_id=${storedUser?.user_id || ""}`
+);
       const data = await res.json();
 
       if (data.success) {
@@ -34,7 +38,11 @@ export default function AnnouncementCard({ role = "member" }) {
 
   const handleDismiss = async (announcementId) => {
   try {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
+   const storedUser = JSON.parse(localStorage.getItem("user"));
+
+const res = await fetch(
+  `${API_URL}?user_id=${storedUser?.user_id || ""}`
+);
 
     if (!storedUser?.user_id) return;
 

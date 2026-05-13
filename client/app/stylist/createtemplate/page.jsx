@@ -2,44 +2,88 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { Trash2, Upload, ChevronDown, Save, ImagePlus } from "lucide-react";
+import { Trash2, Upload, ChevronDown, Save, ImagePlus, RotateCw } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 
 function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
-  const dragging = useRef(false);
-  const origin = useRef({});
-
-  const handlePointerDown = (e) => {
+  const handleSelect = (e) => {
     e.stopPropagation();
     onSelect(item.id);
-    dragging.current = true;
-    origin.current = {
-      mx: e.clientX,
-      my: e.clientY,
-      ix: item.x,
-      iy: item.y,
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origX = item.x;
+    const origY = item.y;
+
+    const move = (e) => {
+      onChange(item.id, {
+        x: origX + (e.clientX - startX),
+        y: origY + (e.clientY - startY),
+      });
     };
-    e.currentTarget.setPointerCapture(e.pointerId);
+
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
   };
 
-  const handlePointerMove = (e) => {
-    if (!dragging.current) return;
+  const handleResize = (e) => {
+    e.stopPropagation();
 
-    onChange(item.id, {
-      x: origin.current.ix + (e.clientX - origin.current.mx),
-      y: origin.current.iy + (e.clientY - origin.current.my),
-    });
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = item.width;
+    const startH = item.height;
+
+    const move = (e) => {
+      onChange(item.id, {
+        width: Math.max(80, startW + (e.clientX - startX)),
+        height: Math.max(80, startH + (e.clientY - startY)),
+      });
+    };
+
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
   };
 
-  const handlePointerUp = () => {
-    dragging.current = false;
+  const handleRotate = (e) => {
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startRotation = item.rotation || 0;
+
+    const move = (e) => {
+      onChange(item.id, {
+        rotation: startRotation + (e.clientX - startX),
+      });
+    };
+
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
   };
 
   return (
     <div
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
+      onClick={handleSelect}
       style={{
         position: "absolute",
         left: item.x,
@@ -48,9 +92,6 @@ function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
         height: item.height,
         transform: `rotate(${item.rotation || 0}deg)`,
         zIndex: isSelected ? 50 : 10,
-        cursor: "grab",
-        userSelect: "none",
-        touchAction: "none",
       }}
     >
       {isSelected && (
@@ -67,42 +108,80 @@ function CanvasItem({ item, isSelected, onSelect, onChange, onRemove }) {
 
       <img
         src={item.imageUrl}
-        alt=""
+        onMouseDown={handleDrag}
         draggable={false}
         style={{
           width: "100%",
           height: "100%",
           objectFit: "contain",
-          pointerEvents: "none",
+          cursor: "grab",
+          userSelect: "none",
         }}
       />
 
       {isSelected && (
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove(item.id);
-          }}
-          style={{
-            position: "absolute",
-            top: -10,
-            right: -10,
-            background: "#ef4444",
-            color: "#fff",
-            border: "none",
-            borderRadius: "50%",
-            width: 22,
-            height: 22,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            zIndex: 60,
-          }}
-        >
-          <Trash2 size={11} />
-        </button>
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(item.id);
+            }}
+            style={{
+              position: "absolute",
+              top: -10,
+              right: -10,
+              background: "#ef4444",
+              color: "#fff",
+              border: "none",
+              borderRadius: "50%",
+              width: 24,
+              height: 24,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              zIndex: 60,
+            }}
+          >
+            <Trash2 size={12} />
+          </button>
+
+          <div
+            onMouseDown={handleResize}
+            style={{
+              position: "absolute",
+              bottom: -2,
+              right: -2,
+              width: 12,
+              height: 12,
+              background: "#fff",
+              border: "1px solid #7CB98B",
+              cursor: "se-resize",
+              zIndex: 60,
+            }}
+          />
+
+          <div
+            onMouseDown={handleRotate}
+            style={{
+              position: "absolute",
+              top: -34,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "#fff",
+              border: "1px solid #ddd",
+              borderRadius: "50%",
+              padding: 4,
+              cursor: "pointer",
+              zIndex: 60,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <RotateCw size={14} />
+          </div>
+        </>
       )}
     </div>
   );

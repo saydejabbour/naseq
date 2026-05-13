@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import MessageBox from "../../../components/ui/MessageBox";
 import { useToast } from "@/context/ToastContext";
+import { Pencil, Trash2, Check } from "lucide-react";
 
 const CANVAS_W = 800;
 const CANVAS_H = 550;
@@ -90,81 +91,156 @@ export default function SavedOutfitsPage() {
               />
             </div>
 
-            <h3 className="mt-3 font-serif text-lg text-[#2F3E34]">
-              {outfit.name}
-            </h3>
+            {/* ✅ RENAME INPUT */}
+{showEdit && selectedId === outfit.outfit_id ? (
+  <div className="mt-3 flex items-center gap-2">
+    <input
+      value={newName}
+      onChange={(e) => setNewName(e.target.value)}
+      className="flex-1 border border-[#E5D5C7] rounded-xl px-3 py-2 text-sm outline-none"
+    />
 
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={() => {
-                  setSelectedId(outfit.outfit_id);
-                  setNewName(outfit.name);
-                  setShowEdit(true);
-                }}
-                className="px-3 py-1 text-sm bg-[#FFF3E0] rounded-lg"
-              >
-                Edit
-              </button>
+    <button
+      onClick={handleEditSave}
+      className="w-10 h-10 rounded-xl bg-[#8DB596] text-white flex items-center justify-center"
+    >
+      ✓
+    </button>
+  </div>
+) : (
+  <h3 className="mt-3 font-serif text-lg text-[#2F3E34]">
+    {outfit.name}
+  </h3>
+)}
 
-              <button
-                onClick={() => {
-                  setSelectedId(outfit.outfit_id);
-                  setShowDelete(true);
-                }}
-                className="px-3 py-1 text-sm bg-red-100 text-red-600 rounded-lg"
-              >
-                Delete
-              </button>
-            </div>
+<div className="flex gap-2 mt-3">
+  <button
+    onClick={() => {
+      setSelectedId(outfit.outfit_id);
+      setNewName(outfit.name);
+      setShowEdit(true);
+    }}
+    className="flex-1 px-3 py-2 text-sm bg-[#F4F1EC] rounded-xl text-[#2F3E34]"
+  >
+    <div className="flex items-center justify-center gap-2">
+  <Pencil size={16} />
+  <span>Rename</span>
+</div>
+  </button>
+
+  <button
+    onClick={() => {
+      setSelectedId(outfit.outfit_id);
+      setShowDelete(true);
+    }}
+    className="flex-1 px-3 py-2 text-sm bg-red-100 text-red-600 rounded-xl"
+  >
+    <div className="flex items-center justify-center gap-2">
+  <Trash2 size={16} />
+  <span>Delete</span>
+</div>
+  </button>
+</div>
           </div>
         ))}
       </div>
 
       {/* ✅ DELETE MODAL */}
       {showDelete && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-md">
-            <p className="mb-4 text-sm">Delete this outfit?</p>
+  <div
+    className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+    style={{
+      background: "rgba(30, 22, 15, 0.45)",
+      backdropFilter: "blur(2px)",
+    }}
+  >
+    <div
+      className="w-full max-w-sm p-7"
+      style={{
+        background: "linear-gradient(160deg, #FFFDF9 0%, #FFF5E9 100%)",
+        borderRadius: "28px",
+        border: "1px solid rgba(245, 185, 120, 0.35)",
+        boxShadow:
+          "0 2px 0 rgba(255,255,255,0.9) inset, 0 24px 60px rgba(47,62,52,0.18)",
+      }}
+    >
+      <div
+        className="mx-auto mb-4 flex items-center justify-center"
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: "50%",
+          background: "linear-gradient(145deg, #FFE8CE, #FFD4A8)",
+          border: "1.5px solid rgba(245, 160, 80, 0.3)",
+          boxShadow: "0 2px 8px rgba(245,160,80,0.18)",
+          color: "#D4782A",
+        }}
+      >
+        <Trash2 size={22} strokeWidth={1.8} />
+      </div>
 
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setShowDelete(false)}>Cancel</button>
+      <h2
+        className="text-center mb-1.5"
+        style={{
+          fontFamily: "Georgia, serif",
+          fontSize: 20,
+          fontWeight: 600,
+          color: "#2A3328",
+        }}
+      >
+        Delete this outfit?
+      </h2>
 
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-red-500 text-white rounded"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <p
+        className="text-center mb-6"
+        style={{ fontSize: 13.5, color: "#7C6E63", lineHeight: 1.6 }}
+      >
+        This outfit will be removed<br />from your saved outfits.
+      </p>
 
-      {/* ✅ EDIT MODAL */}
-      {showEdit && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-md w-[300px]">
-            <p className="mb-2 text-sm">Enter new name</p>
+      <div
+        style={{
+          height: "1px",
+          background:
+            "linear-gradient(90deg, transparent, rgba(210,170,120,0.35), transparent)",
+          marginBottom: 20,
+        }}
+      />
 
-            <input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className="w-full border px-3 py-2 rounded mb-4"
-            />
+      <div className="flex gap-2.5">
+        <button
+          onClick={() => setShowDelete(false)}
+          className="flex-1 py-2.5 text-sm font-medium"
+          style={{
+            borderRadius: 14,
+            background: "rgba(255,255,255,0.7)",
+            border: "1px solid rgba(210,175,130,0.4)",
+            color: "#6B5B4F",
+          }}
+        >
+          Cancel
+        </button>
 
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowEdit(false)}>Cancel</button>
+        <button
+          onClick={handleDelete}
+          className="flex-1 py-2.5 text-sm font-semibold"
+          style={{
+            borderRadius: 14,
+            background: "linear-gradient(160deg, #F5A040 0%, #E8843A 100%)",
+            border: "1px solid rgba(200,110,40,0.25)",
+            color: "#fff",
+            boxShadow:
+              "0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 14px rgba(220,120,40,0.28)",
+          }}
+        >
+          Yes, Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
-              <button
-                onClick={handleEditSave}
-                className="bg-[#2d4a2d] text-white px-4 py-2 rounded"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* VIEW MODAL */}
       {selectedOutfit && (
