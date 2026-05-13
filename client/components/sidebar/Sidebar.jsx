@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 /* ✅ LUCIDE ICONS */
 import {
@@ -13,13 +14,20 @@ import {
   Bookmark,
   Sparkles,
   Users,
-  List,
   LogOut,
   MessageCircle,
 } from "lucide-react";
 
 export default function Sidebar({ role }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  // ✅ LOGOUT FUNCTION
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   /* 🎯 MENUS PER ROLE */
   const menus = {
@@ -38,25 +46,44 @@ export default function Sidebar({ role }) {
       { label: "My Profile", href: "/stylist/profile", icon: Users },
       { label: "My Wardrobe", href: "/stylist/wardrobe", icon: Shirt },
       { label: "Add Item", href: "/stylist/item", icon: PlusCircle },
-      { label: "Create Template",href: "/stylist/createtemplate", icon: PlusCircle },
-      { label: "My Templates", href: "/stylist/templates", icon: LayoutGrid },
+      {
+        label: "Create Template",
+        href: "/stylist/createtemplate",
+        icon: PlusCircle,
+      },
+      {
+        label: "My Templates",
+        href: "/stylist/templates",
+        icon: LayoutGrid,
+      },
     ],
 
     admin: [
       { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-      { label: "Stylist Accounts", href: "/admin/stylistaccounts", icon: Users },
-      { label: "Announcements", href: "/admin/announcements", icon: MessageCircle },
+      {
+        label: "Stylist Accounts",
+        href: "/admin/stylistaccounts",
+        icon: Users,
+      },
+      {
+        label: "Announcements",
+        href: "/admin/announcements",
+        icon: MessageCircle,
+      },
     ],
   };
 
   return (
     <aside className="w-64 bg-white border-r border-[#E8E2D9] p-6 flex flex-col justify-between">
-
       {/* 🔝 TOP */}
       <div>
         {/* LOGO */}
         <Link href="/" className="flex items-center gap-2 mb-8">
-          <img src="/logo.png" alt="logo" className="w-10 h-10 object-contain" />
+          <img
+            src="/logo.png"
+            alt="logo"
+            className="w-10 h-10 object-contain"
+          />
           <span className="font-serif text-lg text-[#1a2e1a]">Naseq</span>
         </Link>
 
@@ -87,11 +114,13 @@ export default function Sidebar({ role }) {
       </div>
 
       {/* 🔻 LOGOUT */}
-      <button className="flex items-center gap-3 text-gray-500 hover:text-[#1a2e1a] transition">
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-3 text-gray-500 hover:text-[#1a2e1a] transition"
+      >
         <LogOut size={18} />
         Logout
       </button>
-
     </aside>
   );
 }
