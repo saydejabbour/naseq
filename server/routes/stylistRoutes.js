@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import db from "../config/db.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 const router = express.Router();
 
@@ -50,16 +51,24 @@ router.patch("/admin/stylist-accounts/:application_id/status", async (req, res) 
       return res.status(400).json({ success: false, message: "Invalid status" });
     }
 
-    const [profiles] = await db.promise().query(
-      `SELECT user_id FROM stylist_profiles WHERE stylist_id = ?`,
-      [application_id]
-    );
+   const [profiles] = await db.promise().query(
+  `SELECT 
+     sp.user_id,
+     u.full_name,
+     u.email
+   FROM stylist_profiles sp
+   JOIN users u ON sp.user_id = u.user_id
+   WHERE sp.stylist_id = ?`,
+  [application_id]
+);
 
     if (profiles.length === 0) {
       return res.status(404).json({ success: false, message: "Stylist not found" });
     }
 
     const userId = profiles[0].user_id;
+    const stylistName = profiles[0].full_name;
+    const stylistEmail = profiles[0].email;
 
     await db.promise().query(
       `UPDATE stylist_profiles SET status = ? WHERE stylist_id = ?`,
@@ -76,6 +85,39 @@ router.patch("/admin/stylist-accounts/:application_id/status", async (req, res) 
     userId,
   ]
 );
+
+const loginLink = "http://localhost:3000/login";
+
+if (status === "Approved") {
+  await sendEmail(
+    stylistEmail,
+    "Your Naseq Stylist Application Has Been Approved",
+    `
+    <h2>Congratulations, ${stylistName}!</h2>
+    <p>Your stylist application has been approved.</p>
+    <p>You can now log in and access your stylist dashboard.</p>
+    <a href="${loginLink}" 
+       style="display:inline-block;padding:12px 18px;background:#7CB98B;color:white;text-decoration:none;border-radius:8px;">
+       Go to Login
+    </a>
+    <p>Welcome to the Naseq stylist community.</p>
+    `
+  );
+}
+
+if (status === "Rejected") {
+  await sendEmail(
+    stylistEmail,
+    "Update on Your Naseq Stylist Application",
+    `
+    <h2>Hello ${stylistName},</h2>
+    <p>Thank you for applying to become a stylist on Naseq.</p>
+    <p>After reviewing your application, we are unable to approve it at this time.</p>
+    <p>You may continue using Naseq as a member, and you are welcome to improve your profile and apply again in the future.</p>
+    <p>Thank you for your interest in joining our stylist community.</p>
+    `
+  );
+}
 
     return res.json({
       success: true,
