@@ -75,16 +75,28 @@ router.patch("/admin/stylist-accounts/:application_id/status", async (req, res) 
       [status, application_id]
     );
 
-   await db.promise().query(
-  `UPDATE users 
-   SET role = ?, stylist_status = ?
-   WHERE user_id = ?`,
-  [
-    "stylist",
-    status.toLowerCase(),
-    userId,
-  ]
-);
+if (status === "Approved") {
+  await db.promise().query(
+    `UPDATE users 
+     SET role = 'stylist',
+         stylist_status = 'approved'
+     WHERE user_id = ?`,
+    [userId]
+  );
+}
+
+if (status === "Rejected") {
+  await db.promise().query(
+    `UPDATE users 
+     SET role = 'member',
+         stylist_status = NULL,
+         is_verified = true,
+         verification_token = NULL,
+         verification_expires = NULL
+     WHERE user_id = ?`,
+    [userId]
+  );
+}
 
 const loginLink = "http://localhost:3000/login";
 
@@ -113,7 +125,14 @@ if (status === "Rejected") {
     <h2>Hello ${stylistName},</h2>
     <p>Thank you for applying to become a stylist on Naseq.</p>
     <p>After reviewing your application, we are unable to approve it at this time.</p>
-    <p>You may continue using Naseq as a member, and you are welcome to improve your profile and apply again in the future.</p>
+    <p>You can now log in and continue using Naseq as a member.</p>
+
+<a href="${loginLink}" 
+   style="display:inline-block;padding:12px 18px;background:#7CB98B;color:white;text-decoration:none;border-radius:8px;">
+   Go to Login
+</a>
+
+<p>You are welcome to improve your profile and apply again in the future.</p>
     <p>Thank you for your interest in joining our stylist community.</p>
     `
   );
@@ -617,6 +636,37 @@ router.delete("/templates/:template_id", async (req, res) => {
       success: false,
       message: "Failed to delete template",
       error: err.message,
+    });
+  }
+});
+/* ================= CONTINUE AS MEMBER ================= */
+router.patch("/continue-as-member/:user_id", async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    await db.promise().query(
+      `UPDATE users 
+       SET role = 'member', stylist_status = NULL
+       WHERE user_id = ?`,
+      [user_id]
+    );
+
+    await db.promise().query(
+      `UPDATE stylist_profiles 
+       SET status = 'Rejected'
+       WHERE user_id = ?`,
+      [user_id]
+    );
+
+    return res.json({
+      success: true,
+      message: "Account changed to member successfully",
+    });
+  } catch (err) {
+    console.error("CONTINUE AS MEMBER ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to continue as member",
     });
   }
 });
