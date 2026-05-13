@@ -8,10 +8,10 @@ export default function StylistPendingPage() {
   const { logout } = useAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
+  const handleGoHome = () => {
+  logout();
+  router.push("/");
+};
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center px-4">
@@ -34,10 +34,10 @@ export default function StylistPendingPage() {
         </p>
 
         <button
-          onClick={handleLogout}
+         onClick={handleGoHome}
           className="w-full bg-[#7CB98B] text-white py-3 rounded-xl text-sm hover:bg-[#6aa879] transition"
         >
-          Back to Login
+          Go to Home
         </button>
       </div>
     </div>

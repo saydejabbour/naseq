@@ -21,11 +21,11 @@ export default function StylistApplication() {
     if (loading) return;
 
     const user = JSON.parse(localStorage.getItem("user"));
-
-    if (!user) {
-      showToast("You must be logged in", "error");
-      return;
-    }
+if (!user) {
+  showToast("Please verify your account first, then login to complete your application.", "error");
+  router.push("/stylist/pending");
+  return;
+}
 
     setLoading(true);
 

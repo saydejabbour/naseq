@@ -16,15 +16,15 @@ export default function StylistLayout({ children }) {
 
   useEffect(() => {
     if (!isLoading) {
-      if (!user) {
+      if (!user && !isStatusPage) {
         router.push("/login");
-      } else if (user.role !== "stylist") {
+      } else if (user && user.role !== "stylist") {
         router.push("/");
-      } else if (!isStatusPage && user.stylist_status === "pending") {
+      } else if (user && !isStatusPage && user.stylist_status === "pending") {
         router.push("/stylist/pending");
-      } else if (!isStatusPage && user.stylist_status === "rejected") {
+      } else if (user && !isStatusPage && user.stylist_status === "rejected") {
         router.push("/stylist/rejected");
-      } else if (!isStatusPage && user.stylist_status !== "approved") {
+      } else if (user && !isStatusPage && user.stylist_status !== "approved") {
         router.push("/login");
       }
     }
@@ -38,11 +38,11 @@ export default function StylistLayout({ children }) {
     );
   }
 
-  if (!user || user.role !== "stylist") return null;
-
   if (isStatusPage) {
     return <ToastProvider>{children}</ToastProvider>;
   }
+
+  if (!user || user.role !== "stylist") return null;
 
   if (user.stylist_status !== "approved") return null;
 
