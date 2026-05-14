@@ -1,111 +1,73 @@
+import OpenAI from "openai";
 import sharp from "sharp";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 /* -------------------- CATEGORY DATA -------------------- */
 
-const CATEGORIES = {
- Tops: [
-  "t-shirt", "shirt", "blouse", "tank top", "crop top", "bodysuit",
-  "sweater", "hoodie", "cardigan", "top", "camisole", "jersey",
-  "maillot", "tank suit", "bikini", "two-piece", "brassiere", "bra",
-  "bandeau", "corset"
-],
+const VALID_CATEGORIES = {
+  Tops: [
+    "T-Shirt", "Polo Shirt", "Button-Down Shirt", "Blouse",
+    "Tank Top", "Crop Top", "Bodysuit", "Sweater",
+    "Turtleneck", "Cardigan", "Hoodie", "Sweatshirt",
+  ],
+
   Bottoms: [
-    "jeans", "pants", "trousers", "shorts", "skirt", "miniskirt",
-    "leggings", "joggers", "sweatpants", "denim"
+    "Jeans", "Trousers", "Dress Pants", "Chinos",
+    "Shorts", "Leggings", "Joggers", "Sweatpants",
+    "Mini Skirt", "Midi Skirt", "Maxi Skirt", "Denim Skirt",
   ],
-  Shoes: [
-    "shoe", "sneaker", "boot", "heel", "sandal", "loafer",
-    "flat", "mule", "footwear"
-  ],
-  Accessories: [
-    "hat", "cap", "belt", "scarf", "watch", "sunglasses",
-    "jewelry", "necklace", "bracelet", "earring", "gloves"
-  ],
+
   "Dresses & Jumpsuits": [
-    "dress", "gown", "frock", "jumpsuit", "romper", "sundress",
-    "evening gown", "cocktail dress"
+    "Mini Dress", "Midi Dress", "Maxi Dress", "Wrap Dress",
+    "Shirt Dress", "Bodycon Dress", "Slip Dress",
+    "Sundress", "Evening Gown", "Jumpsuit", "Romper",
   ],
+
   Outerwear: [
-    "coat", "jacket", "blazer", "trench", "parka", "puffer",
-    "windbreaker", "bomber"
+    "Trench Coat", "Wool Coat", "Puffer Jacket", "Leather Jacket",
+    "Denim Jacket", "Bomber Jacket", "Blazer",
+    "Windbreaker", "Parka", "Peacoat",
   ],
+
+  Shoes: [
+    "Sneakers", "Loafers", "Oxford Shoes", "Chelsea Boots",
+    "Ankle Boots", "Knee-High Boots", "Heels", "Block Heels",
+    "Sandals", "Slides", "Ballet Flats", "Mules",
+  ],
+
+  Accessories: [
+    "Belt", "Sunglasses", "Watch", "Scarf",
+    "Baseball Cap", "Beanie", "Wide-Brim Hat",
+    "Gloves", "Hair Clip", "Headband", "Jewelry"
+  ],
+
   Bags: [
-    "bag", "handbag", "tote", "backpack", "clutch", "crossbody",
-    "purse", "shoulder bag"
+    "Tote Bag", "Backpack", "Shoulder Bag", "Crossbody Bag",
+    "Clutch", "Mini Bag", "Bucket Bag", "Fanny Pack",
   ],
+
   Activewear: [
-    "sports bra", "activewear", "gym", "athletic", "track pants",
-    "track jacket", "cycling shorts", "tennis skirt"
+    "Sports Bra", "Athletic Shorts", "Compression Leggings",
+    "Track Jacket", "Track Pants", "Cycling Shorts",
+    "Tennis Skirt", "Rashguard",
   ],
 };
 
-const SUBCATEGORIES = [
- { category: "Tops", subcategory: "Tank Top", keywords: ["maillot", "tank suit", "bikini", "two-piece", "bandeau", "brassiere", "bra", "corset"] },
-
-  { category: "Bottoms", subcategory: "Jeans", keywords: ["jeans", "denim", "blue jean"] },
-  { category: "Bottoms", subcategory: "Trousers", keywords: ["trousers", "pants", "slacks"] },
-  { category: "Bottoms", subcategory: "Shorts", keywords: ["shorts"] },
-  { category: "Bottoms", subcategory: "Leggings", keywords: ["leggings"] },
-  { category: "Bottoms", subcategory: "Mini Skirt", keywords: ["miniskirt", "mini skirt", "skirt"] },
-
-  { category: "Dresses & Jumpsuits", subcategory: "Evening Gown", keywords: ["gown", "evening gown", "ball gown"] },
-  { category: "Dresses & Jumpsuits", subcategory: "Mini Dress", keywords: ["mini dress", "dress", "frock"] },
-  { category: "Dresses & Jumpsuits", subcategory: "Jumpsuit", keywords: ["jumpsuit"] },
-  { category: "Dresses & Jumpsuits", subcategory: "Romper", keywords: ["romper"] },
-
-  { category: "Shoes", subcategory: "Sneakers", keywords: ["sneaker", "sneakers", "trainer"] },
-  { category: "Shoes", subcategory: "Heels", keywords: ["heel", "heels", "pump", "stiletto"] },
-  { category: "Shoes", subcategory: "Sandals", keywords: ["sandal", "sandals"] },
-  { category: "Shoes", subcategory: "Boots", keywords: ["boot", "boots"] },
-  { category: "Shoes", subcategory: "Loafers", keywords: ["loafer", "loafers"] },
-
-  { category: "Accessories", subcategory: "Baseball Cap", keywords: ["cap", "baseball cap"] },
-  { category: "Accessories", subcategory: "Belt", keywords: ["belt"] },
-  { category: "Accessories", subcategory: "Sunglasses", keywords: ["sunglasses", "glasses"] },
-  { category: "Accessories", subcategory: "Jewelry", keywords: ["jewelry", "necklace", "bracelet", "earring"] },
-
-  { category: "Outerwear", subcategory: "Blazer", keywords: ["blazer"] },
-  { category: "Outerwear", subcategory: "Coat", keywords: ["coat", "overcoat"] },
-  { category: "Outerwear", subcategory: "Puffer Jacket", keywords: ["puffer"] },
-  { category: "Outerwear", subcategory: "Jacket", keywords: ["jacket"] },
-
-  { category: "Bags", subcategory: "Tote Bag", keywords: ["tote"] },
-  { category: "Bags", subcategory: "Backpack", keywords: ["backpack"] },
-  { category: "Bags", subcategory: "Clutch", keywords: ["clutch"] },
-  { category: "Bags", subcategory: "Shoulder Bag", keywords: ["handbag", "bag", "purse"] },
-
-  { category: "Activewear", subcategory: "Sports Bra", keywords: ["sports bra"] },
-  { category: "Activewear", subcategory: "Track Pants", keywords: ["track pants"] },
-  { category: "Activewear", subcategory: "Tennis Skirt", keywords: ["tennis skirt"] },
+const COLORS = [
+  "Black", "White", "Ivory", "Beige", "Camel",
+  "Light Gray", "Charcoal", "Brown",
+  "Light Blue", "Navy", "Royal Blue",
+  "Olive", "Forest Green", "Sage",
+  "Red", "Burgundy", "Pink", "Blush",
+  "Orange", "Yellow", "Mustard",
+  "Purple", "Lavender",
+  "Multicolor", "Patterned",
 ];
 
-/* -------------------- COLOR DATA -------------------- */
-
-const COLOR_PALETTE = [
-  { name: "Black", rgb: [20, 20, 20] },
-  { name: "White", rgb: [245, 245, 245] },
-  { name: "Ivory", rgb: [255, 248, 220] },
-  { name: "Beige", rgb: [210, 190, 160] },
-  { name: "Camel", rgb: [193, 154, 107] },
-  { name: "Light Gray", rgb: [190, 190, 190] },
-  { name: "Charcoal", rgb: [70, 70, 70] },
-  { name: "Brown", rgb: [120, 75, 45] },
-  { name: "Light Blue", rgb: [135, 190, 230] },
-  { name: "Navy", rgb: [20, 35, 80] },
-  { name: "Royal Blue", rgb: [40, 90, 200] },
-  { name: "Olive", rgb: [105, 120, 60] },
-  { name: "Forest Green", rgb: [35, 100, 60] },
-  { name: "Sage", rgb: [160, 180, 150] },
-  { name: "Red", rgb: [190, 40, 40] },
-  { name: "Burgundy", rgb: [110, 25, 45] },
-  { name: "Pink", rgb: [190, 120, 135] },
-  { name: "Blush", rgb: [215, 170, 170] },
-  { name: "Orange", rgb: [220, 120, 45] },
-  { name: "Yellow", rgb: [230, 210, 70] },
-  { name: "Mustard", rgb: [190, 150, 45] },
-  { name: "Purple", rgb: [120, 70, 160] },
-  { name: "Lavender", rgb: [180, 150, 220] },
-];
+/* -------------------- COLOR DETECTION -------------------- */
 
 function distance(rgb1, rgb2) {
   return Math.sqrt(
@@ -115,14 +77,20 @@ function distance(rgb1, rgb2) {
   );
 }
 
-function rgbToHex([r, g, b]) {
-  return (
-    "#" +
-    [r, g, b]
-      .map((x) => Math.round(x).toString(16).padStart(2, "0"))
-      .join("")
-  );
-}
+const COLOR_PALETTE = [
+  { name: "Black", rgb: [20, 20, 20] },
+  { name: "White", rgb: [245, 245, 245] },
+  { name: "Beige", rgb: [210, 190, 160] },
+  { name: "Brown", rgb: [120, 75, 45] },
+  { name: "Light Blue", rgb: [135, 190, 230] },
+  { name: "Navy", rgb: [20, 35, 80] },
+  { name: "Red", rgb: [255, 0, 0] },
+{ name: "Pink", rgb: [255, 170, 190] },
+  { name: "Orange", rgb: [220, 120, 45] },
+  { name: "Yellow", rgb: [230, 210, 70] },
+  { name: "Purple", rgb: [120, 70, 160] },
+  { name: "Olive", rgb: [105, 120, 60] },
+];
 
 function findClosestColor(rgb) {
   let best = COLOR_PALETTE[0];
@@ -130,6 +98,7 @@ function findClosestColor(rgb) {
 
   for (const color of COLOR_PALETTE) {
     const d = distance(rgb, color.rgb);
+
     if (d < bestDistance) {
       bestDistance = d;
       best = color;
@@ -137,56 +106,6 @@ function findClosestColor(rgb) {
   }
 
   return best.name;
-}
-
-/* -------------------- HELPERS -------------------- */
-
-function normalize(text) {
-  return String(text || "").toLowerCase().trim();
-}
-
-function detectCategoryAndSubcategory(labels) {
-  const joined = labels.map(normalize).join(" ");
-
-  const scores = {};
-
-  for (const [category, keywords] of Object.entries(CATEGORIES)) {
-    scores[category] = 0;
-
-    for (const keyword of keywords) {
-      if (joined.includes(keyword)) {
-        scores[category] += 1;
-      }
-    }
-  }
-
-  let bestCategory = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
-
-  let category = bestCategory?.[1] > 0 ? bestCategory[0] : "Tops";
-
-  let subcategory = "";
-
-  for (const item of SUBCATEGORIES) {
-    if (item.category !== category) continue;
-
-    const found = item.keywords.some((keyword) => joined.includes(keyword));
-
-    if (found) {
-      subcategory = item.subcategory;
-      break;
-    }
-  }
-
-  if (!subcategory) {
-    const fallback = SUBCATEGORIES.find((item) => item.category === category);
-    subcategory = fallback?.subcategory || "";
-  }
-
-  return {
-    category,
-    subcategory,
-    confidence: bestCategory?.[1] > 0 ? 0.75 : 0.35,
-  };
 }
 
 async function detectMainColorFromBuffer(buffer) {
@@ -206,18 +125,12 @@ async function detectMainColorFromBuffer(buffer) {
     const green = data[i + 1];
     const blue = data[i + 2];
 
-    const isWhiteBackground =
+    const isWhite =
       red > 220 &&
       green > 220 &&
-      blue > 220 &&
-      Math.abs(red - green) < 20 &&
-      Math.abs(red - blue) < 20 &&
-      Math.abs(green - blue) < 20;
+      blue > 220;
 
-    if (isWhiteBackground) continue;
-
-    const isAlmostBlack = red < 18 && green < 18 && blue < 18;
-    if (isAlmostBlack) continue;
+    if (isWhite) continue;
 
     r += red;
     g += green;
@@ -226,11 +139,7 @@ async function detectMainColorFromBuffer(buffer) {
   }
 
   if (count === 0) {
-    return {
-      color: "White",
-      hex: "#ffffff",
-      rgb: [255, 255, 255],
-    };
+    return "White";
   }
 
   const avgRgb = [
@@ -239,19 +148,13 @@ async function detectMainColorFromBuffer(buffer) {
     Math.round(b / count),
   ];
 
-  return {
-    color: findClosestColor(avgRgb),
-    hex: rgbToHex(avgRgb),
-    rgb: avgRgb,
-  };
+  return findClosestColor(avgRgb);
 }
 
-/* -------------------- CONTROLLERS -------------------- */
+/* -------------------- AI ANALYSIS -------------------- */
 
 export const analyzeImage = async (req, res) => {
   try {
-    console.log("📥 Received image analyze request");
-
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -259,60 +162,97 @@ export const analyzeImage = async (req, res) => {
       });
     }
 
-    console.log("🚀 Sending image to HuggingFace...");
+    const base64Image = req.file.buffer.toString("base64");
 
-    const response = await fetch(
-      "https://router.huggingface.co/hf-inference/models/google/vit-base-patch16-224",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.HF_API_KEY}`,
-          "Content-Type": "application/octet-stream",
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content: `
+You are a fashion classifier.
+
+You must ONLY return valid JSON.
+
+Return:
+{
+  "category": "",
+  "subcategory": "",
+  "color": ""
+}
+
+Rules:
+- category must be one of:
+${Object.keys(VALID_CATEGORIES).join(", ")}
+
+- subcategory must belong to the category.
+- color must be one of:
+Black, White, Ivory, Beige, Camel,
+Light Gray, Charcoal, Brown,
+Light Blue, Navy, Royal Blue,
+Olive, Forest Green, Sage,
+Red, Burgundy, Pink, Blush,
+Orange, Yellow, Mustard,
+Purple, Lavender
+
+- no explanations
+- no markdown
+          `,
         },
-        body: req.file.buffer,
-      }
-    );
 
-    const hfData = await response.json();
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Analyze this clothing item.",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${base64Image}`,
+              },
+            },
+          ],
+        },
+      ],
+      temperature: 0.2,
+    });
 
-    console.log("🤖 HF response:", hfData);
+    const text = response.choices[0].message.content;
 
-    if (!Array.isArray(hfData)) {
-      return res.status(500).json({
-        success: false,
-        message: "AI failed",
-        raw: hfData,
-      });
+    let parsed;
+
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = {
+        category: "Tops",
+        subcategory: "T-Shirt",
+      };
     }
 
-    const concepts = hfData.map((item) => item.label);
-    const categoryData = detectCategoryAndSubcategory(concepts);
-    const colorData = await detectMainColorFromBuffer(req.file.buffer);
-
     return res.json({
-      success: true,
-      concepts,
-      category: categoryData.category,
-      subcategory: categoryData.subcategory,
-      color: colorData.color,
-      hex: colorData.hex,
-      rgb: colorData.rgb,
-      confidence: categoryData.confidence,
-    });
+  success: true,
+  category: parsed.category,
+  subcategory: parsed.subcategory,
+  color: parsed.color,
+});
+
   } catch (err) {
-    console.error("🔥 ANALYZE IMAGE ERROR:", err);
+    console.error("OPENAI ERROR:", err);
 
     return res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "AI failed",
     });
   }
 };
 
+/* -------------------- COLOR ONLY -------------------- */
+
 export const detectColor = async (req, res) => {
   try {
-    console.log("🎨 Detecting real image color...");
-
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -320,14 +260,15 @@ export const detectColor = async (req, res) => {
       });
     }
 
-    const colorData = await detectMainColorFromBuffer(req.file.buffer);
+    const color = await detectMainColorFromBuffer(req.file.buffer);
 
     return res.json({
       success: true,
-      ...colorData,
+      color,
     });
+
   } catch (err) {
-    console.error("🔥 COLOR DETECTION ERROR:", err);
+    console.error(err);
 
     return res.status(500).json({
       success: false,

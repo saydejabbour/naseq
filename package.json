@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "framer-motion": "^12.38.0"
+    "framer-motion": "^12.38.0",
+    "openai": "^6.37.0"
   }
 }
