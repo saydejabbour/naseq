@@ -28,7 +28,6 @@ export const createOutfit = (req, res) => {
 
       console.log("BACKEND RECEIVED:", items);
 
-      // ✅ FIXED QUERY (NO x, y, width, height)
       const insertItemsQuery = `
         INSERT INTO member_outfit_items (outfit_id, item_id)
         VALUES (?, ?)
@@ -54,7 +53,7 @@ export const createOutfit = (req, res) => {
 };
 
 
-// ================= SAVE OUTFIT AS IMAGE (🔥 NEW SYSTEM) =================
+// ================= SAVE OUTFIT AS IMAGE =================
 export const saveOutfitImage = (req, res) => {
   const { user_id, image } = req.body;
 
@@ -69,7 +68,6 @@ export const saveOutfitImage = (req, res) => {
 
     const uploadPath = path.join("uploads");
 
-    // create folder if not exists
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath);
     }
@@ -165,32 +163,54 @@ export const renameOutfit = (req, res) => {
   });
 };
 
-// ================= GENERATE OUTFITS (NEW FEATURE) =================
+// ================= GENERATE OUTFITS =================
+
+// 🔹 Accessory group map — items in the same group count as duplicates
+const ACCESSORY_GROUPS = {
+  "Sunglasses":   "eyewear",
+  "Eyewear":      "eyewear",
+  "Glasses":      "eyewear",
+  "Baseball Cap": "headwear",
+  "Wide-Brim Hat":"headwear",
+  "Beanie":       "headwear",
+  "Hat":          "headwear",
+  "Cap":          "headwear",
+  "Watch":        "watch",
+  "Belt":         "belt",
+  "Scarf":        "scarf",
+  "Gloves":       "gloves",
+  "Headband":     "headband",
+  "Jewelry":      "jewelry",
+};
+
+const getAccessoryGroup = (subcategory) =>
+  ACCESSORY_GROUPS[subcategory] || subcategory;
+
 export const generateOutfits = async (req, res) => {
   try {
     const { user_id, base_item_id, styles } = req.body;
 
-   if (!user_id || !styles || styles.length === 0) {
-  return errorResponse(res, "Missing required fields", 400);
-}
+    if (!user_id || !styles || styles.length === 0) {
+      return errorResponse(res, "Missing required fields", 400);
+    }
 
     // 🔹 BASE ITEM (OPTIONAL)
-let baseItem = null;
-let category = null;
+    let baseItem = null;
+    let category = null;
 
-if (base_item_id) {
-  const [baseRows] = await db.promise().query(
-    "SELECT * FROM clothing_items WHERE item_id = ? AND user_id = ?",
-    [base_item_id, user_id]
-  );
+    if (base_item_id) {
+      const [baseRows] = await db.promise().query(
+        "SELECT * FROM clothing_items WHERE item_id = ? AND user_id = ?",
+        [base_item_id, user_id]
+      );
 
-  if (!baseRows.length) {
-    return errorResponse(res, "Base item not found", 404);
-  }
+      if (!baseRows.length) {
+        return errorResponse(res, "Base item not found", 404);
+      }
 
-  baseItem = baseRows[0];
-  category = baseItem.category_id;
-}
+      baseItem = baseRows[0];
+      category = baseItem.category_id;
+    }
 
     // 🔹 ALL ITEMS
     const [allItemsRaw] = await db.promise().query(
@@ -213,7 +233,7 @@ if (base_item_id) {
       // ─────────────────────────────────────────────
       let usableItems;
 
-     if (baseItem && category == 5) {
+      if (baseItem && category == 5) {
         // dress → remove tops & bottoms
         usableItems = allItemsRaw.filter(
           i => i.category_id !== 1 && i.category_id !== 2
@@ -229,42 +249,40 @@ if (base_item_id) {
       usableItems = usableItems.filter(i => i.style === style);
 
       // ─────────────────────────────────────────────
-      // 🎨 SCORE FUNCTION (IMPROVED)
+      // 🎨 SCORE FUNCTION
       // ─────────────────────────────────────────────
       const calculateScore = (item) => {
-  let score = 0;
+        let score = 0;
 
-  const NEUTRAL = ["black", "white", "grey", "gray", "beige", "navy"];
+        const NEUTRAL = ["black", "white", "grey", "gray", "beige", "navy"];
 
-  // ✅ MODE 2: no selected item
-  // Score by style only, because there is no base item to compare with
-  if (!baseItem) {
-    if (item.style === style) score += 5;
-    if (item.season === "All Season") score += 2;
-    return score;
-  }
+        if (!baseItem) {
+          if (item.style === style) score += 5;
+          if (item.season === "All Season") score += 2;
+          return score;
+        }
 
-  // ✅ MODE 1: selected item exists
-  if (item.color === baseItem.color) {
-    score += 4;
-  } else if (
-    NEUTRAL.includes(item.color?.toLowerCase()) ||
-    NEUTRAL.includes(baseItem.color?.toLowerCase())
-  ) {
-    score += 2;
-  }
+        if (item.color === baseItem.color) {
+          score += 4;
+        } else if (
+          NEUTRAL.includes(item.color?.toLowerCase()) ||
+          NEUTRAL.includes(baseItem.color?.toLowerCase())
+        ) {
+          score += 2;
+        }
 
-  if (item.season === baseItem.season) {
-    score += 3;
-  } else if (
-    item.season === "All Season" ||
-    baseItem.season === "All Season"
-  ) {
-    score += 2;
-  }
+        if (item.season === baseItem.season) {
+          score += 3;
+        } else if (
+          item.season === "All Season" ||
+          baseItem.season === "All Season"
+        ) {
+          score += 2;
+        }
 
-  return score;
-};
+        return score;
+      };
+
       // ─────────────────────────────────────────────
       // 🔥 BEST MATCH
       // ─────────────────────────────────────────────
@@ -276,7 +294,6 @@ if (base_item_id) {
           .sort((a, b) => b._score - a._score);
 
         const best = candidates[0] || null;
-
         if (best) used.add(best.item_id);
         return best;
       };
@@ -300,26 +317,20 @@ if (base_item_id) {
       };
 
       // ─────────────────────────────────────────────
-      // 🧱 STRUCTURE LOGIC (CRITICAL FIX)
+      // 🧱 STRUCTURE LOGIC
       // ─────────────────────────────────────────────
       if (baseItem && category == 5) {
         outfit.items.dress = baseItem;
-
       } else if (category == 1) {
         outfit.items.top = baseItem;
-
       } else if (category == 2) {
         outfit.items.bottom = baseItem;
-
       } else if (category == 3) {
         outfit.items.shoes = baseItem;
-
       } else if (category == 7) {
         outfit.items.bag = baseItem;
-
       } else if (category == 4) {
         outfit.items.accessories = [baseItem];
-
       } else if (category == 6) {
         outfit.items.outerwear = baseItem;
       }
@@ -328,15 +339,12 @@ if (base_item_id) {
       // 🔥 REQUIRED ITEMS
       // ─────────────────────────────────────────────
       if (!outfit.items.dress) {
-
         if (!outfit.items.top) {
           outfit.items.top = getBest(1, 3);
         }
-
         if (!outfit.items.bottom) {
           outfit.items.bottom = getRandomized(2, 3);
         }
-
       }
 
       if (!outfit.items.shoes) {
@@ -360,13 +368,26 @@ if (base_item_id) {
       }
 
       // ─────────────────────────────────────────────
-      // 🎀 ACCESSORIES (MAX 2)
+      // 🎀 ACCESSORIES (MAX 2, ONE PER GROUP)
       // ─────────────────────────────────────────────
+      const seenGroups = new Set();
+
+      // If base item was an accessory, mark its group as already seen
+      if (baseItem && category == 4) {
+        seenGroups.add(getAccessoryGroup(baseItem.subcategory));
+      }
+
       const accessories = usableItems
         .filter(i => i.category_id == 4 && !used.has(i.item_id))
         .map(i => ({ ...i, score: calculateScore(i) }))
         .filter(i => i.score >= 4)
         .sort((a, b) => b.score - a.score)
+        .filter(i => {
+          const group = getAccessoryGroup(i.subcategory);
+          if (seenGroups.has(group)) return false;
+          seenGroups.add(group);
+          return true;
+        })
         .slice(0, 2);
 
       if (!outfit.items.accessories) {
