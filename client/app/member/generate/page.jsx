@@ -502,9 +502,9 @@ showToast("Outfit saved ");
   </div>
 )}
        {bottom && (
-  <div style={{ width: "100%", height: "130px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+  <div style={{ width: "100%", height: "110px", display: "flex", alignItems: "center", justifyContent: "center" }}>
     <img src={getImage(bottom.image_url)} alt=""
-      style={{ maxWidth: "55%", maxHeight: "130px", objectFit: "contain" }} />
+      style={{ maxWidth: "55%", maxHeight: "110px", objectFit: "contain" }} />
   </div>
 )}
         </>
@@ -535,12 +535,12 @@ showToast("Outfit saved ");
       style={{ maxWidth: "70%", maxHeight: "70px", objectFit: "contain" }} />
   </div>
 )}
-    {accessories.map((acc, i) => (
-      <div key={i} style={{ width: "100%", height: "60px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <img src={getImage(acc.image_url)} alt=""
-          style={{ maxWidth: "100%", maxHeight: "60px", objectFit: "contain" }} />
-      </div>
-    ))}
+   {accessories.map((acc, i) => (
+  <div key={i} style={{ width: "100%", height: "55px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <img src={getImage(acc.image_url)} alt=""
+      style={{ maxWidth: "75%", maxHeight: "55px", objectFit: "contain" }} />
+  </div>
+))}
   </div>
 
 </div>
