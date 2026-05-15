@@ -155,7 +155,12 @@ async function detectMainColorFromBuffer(buffer) {
 
 export const analyzeImage = async (req, res) => {
   try {
-    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No image uploaded",
+      });
+    }
     if (process.env.AI_ENABLED !== "true") {
   return res.json({
     success: false,

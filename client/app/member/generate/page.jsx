@@ -619,6 +619,7 @@ export default function GeneratePage() {
   const [outfits,        setOutfits]        = useState([]);
   const [loading,        setLoading]        = useState(false);
   const [hasGenerated,   setHasGenerated]   = useState(false);
+  const [generationCount, setGenerationCount] = useState(0);
 
   const getImage = (url) =>
     url?.startsWith("http") ? url : `http://localhost:5000${url}`;
@@ -640,6 +641,9 @@ export default function GeneratePage() {
       setOutfits([]);
       setHasGenerated(false);
       console.log("START");
+      const nextGeneration = generationCount + 1;
+setGenerationCount(nextGeneration);
+
       const res = await fetch("http://localhost:5000/api/outfits/generate", {
 
         method: "POST",
@@ -648,6 +652,7 @@ export default function GeneratePage() {
   user_id: user.user_id,
   base_item_id: selectedItem?.item_id || null,
   styles: selectedStyles,
+  generation_seed: nextGeneration,
 }),
       });
       console.log("end");

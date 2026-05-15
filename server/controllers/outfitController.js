@@ -188,7 +188,7 @@ const getAccessoryGroup = (subcategory) =>
 
 export const generateOutfits = async (req, res) => {
   try {
-    const { user_id, base_item_id, styles } = req.body;
+    const { user_id, base_item_id, styles, generation_seed = Date.now() } = req.body;
 
     if (!user_id || !styles || styles.length === 0) {
       return errorResponse(res, "Missing required fields", 400);
@@ -286,35 +286,24 @@ export const generateOutfits = async (req, res) => {
       // ─────────────────────────────────────────────
       // 🔥 BEST MATCH
       // ─────────────────────────────────────────────
-      const getBest = (category_id, minScore = 0) => {
-        const candidates = usableItems
-          .filter(i => i.category_id === category_id && !used.has(i.item_id))
-          .map(i => ({ ...i, _score: calculateScore(i) }))
-          .filter(i => i._score >= minScore)
-          .sort((a, b) => b._score - a._score);
+    const pickSmart = (category_id, minScore = 0, offset = 0) => {
+  const candidates = usableItems
+    .filter(i => i.category_id === category_id && !used.has(i.item_id))
+    .map(i => ({ ...i, _score: calculateScore(i) }))
+    .filter(i => i._score >= minScore)
+    .sort((a, b) => b._score - a._score);
 
-        const best = candidates[0] || null;
-        if (best) used.add(best.item_id);
-        return best;
-      };
+  if (!candidates.length) return null;
 
-      // ─────────────────────────────────────────────
-      // 🎲 RANDOM VARIATION (FOR DIVERSITY)
-      // ─────────────────────────────────────────────
-      const getRandomized = (category_id, minScore = 0) => {
-        const candidates = usableItems
-          .filter(i => i.category_id === category_id && !used.has(i.item_id))
-          .map(i => ({ ...i, _score: calculateScore(i) }))
-          .filter(i => i._score >= minScore);
+  // take top 5 only: still smart, but not always same item
+  const topCandidates = candidates.slice(0, 5);
 
-        if (!candidates.length) return null;
+  const index = Math.abs(Number(generation_seed) + offset) % topCandidates.length;
+  const selected = topCandidates[index];
 
-        const random =
-          candidates[Math.floor(Math.random() * candidates.length)];
-
-        used.add(random.item_id);
-        return random;
-      };
+  used.add(selected.item_id);
+  return selected;
+};
 
       // ─────────────────────────────────────────────
       // 🧱 STRUCTURE LOGIC
@@ -338,24 +327,24 @@ export const generateOutfits = async (req, res) => {
       // ─────────────────────────────────────────────
       // 🔥 REQUIRED ITEMS
       // ─────────────────────────────────────────────
-      if (!outfit.items.dress) {
-        if (!outfit.items.top) {
-          outfit.items.top = getBest(1, 3);
-        }
-        if (!outfit.items.bottom) {
-          outfit.items.bottom = getRandomized(2, 3);
-        }
-      }
+     if (!outfit.items.dress) {
+  if (!outfit.items.top) {
+    outfit.items.top = pickSmart(1, 3, 1);
+  }
 
-      if (!outfit.items.shoes) {
-        outfit.items.shoes = getRandomized(3, 3);
-      }
+  if (!outfit.items.bottom) {
+    outfit.items.bottom = pickSmart(2, 3, 2);
+  }
+}
 
+if (!outfit.items.shoes) {
+  outfit.items.shoes = pickSmart(3, 3, 3);
+}
       // ─────────────────────────────────────────────
       // ✨ OPTIONAL ITEMS
       // ─────────────────────────────────────────────
       const tryOptional = (category_id) => {
-        const item = getBest(category_id, 4);
+        const item = pickSmart(category_id, 4, category_id);
         return item || null;
       };
 
