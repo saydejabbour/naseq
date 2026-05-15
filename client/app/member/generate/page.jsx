@@ -458,63 +458,92 @@ showToast("Outfit saved ");
         </span>
       </div>
 
-      {/* BODY */}
-      <div style={{
-        padding: "20px",
-        display: "flex",
-        minHeight: "300px"
-      }}>
+     {/* BODY */}
+<div style={{
+  padding: "20px",
+  display: "flex",
+  gap: "8px",
+  minHeight: "320px",
+}}>
 
-        {/* LEFT SIDE */}
-        <div style={{
-          flex: "0 0 56%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          justifyContent: "space-between"
-        }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            {outerwear && (
-              <img src={getImage(outerwear.image_url)} style={{ height: 90 }} alt="" />
-            )}
-            {isDress ? (
-              <img src={getImage(dress.image_url)} style={{ height: 180 }} alt="" />
-            ) : (
-              <>
-                {top    && <img src={getImage(top.image_url)}    style={{ height: 110 }} alt="" />}
-                {bottom && <img src={getImage(bottom.image_url)} style={{ height: 140, marginTop: "-6px" }} alt="" />}
-              </>
-            )}
-          </div>
-
-          {shoes && (
-            <img
-              src={getImage(shoes.image_url)}
-              style={{ height: 75, alignSelf: "flex-end" }}
-              alt=""
-            />
-          )}
+  {/* LEFT SIDE — clothing stack */}
+  <div style={{
+    flex: "0 0 56%",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    alignItems: "center",
+  }}>
+    {/* Top group */}
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: "4px",
+      width: "100%",
+    }}>
+      {outerwear && (
+        <div style={{ width: "100%", height: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <img src={getImage(outerwear.image_url)} alt=""
+            style={{ maxWidth: "100%", maxHeight: "80px", objectFit: "contain" }} />
         </div>
-
-        {/* RIGHT SIDE */}
-        <div style={{
-          flex: "0 0 44%",
-          display: "flex",
-          flexDirection: "column",
-          gap: "14px",
-          paddingLeft: "10px"
-        }}>
-          {rightItems.map((entry, i) => (
-            <img
-              key={i}
-              src={getImage(entry.item.image_url)}
-              style={{ height: entry.size, objectFit: "contain" }}
-              alt=""
-            />
-          ))}
+      )}
+      {isDress ? (
+        <div style={{ width: "100%", height: "170px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <img src={getImage(dress.image_url)} alt=""
+            style={{ maxWidth: "100%", maxHeight: "170px", objectFit: "contain" }} />
         </div>
+      ) : (
+        <>
+         {top && (
+  <div style={{ width: "100%", height: "100px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <img src={getImage(top.image_url)} alt=""
+      style={{ maxWidth: "70%", maxHeight: "100px", objectFit: "contain" }} />
+  </div>
+)}
+       {bottom && (
+  <div style={{ width: "100%", height: "130px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <img src={getImage(bottom.image_url)} alt=""
+      style={{ maxWidth: "55%", maxHeight: "130px", objectFit: "contain" }} />
+  </div>
+)}
+        </>
+      )}
+    </div>
 
+    {/* Shoes — pinned to bottom */}
+   {shoes && (
+  <div style={{ width: "100%", height: "60px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <img src={getImage(shoes.image_url)} alt=""
+      style={{ maxWidth: "65%", maxHeight: "60px", objectFit: "contain" }} />
+  </div>
+)}
+  </div>
+
+  {/* RIGHT SIDE — accessories */}
+  <div style={{
+    flex: "0 0 44%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "10px",
+    paddingTop: "4px",
+  }}>
+    {bag && (
+      <div style={{ width: "100%", height: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img src={getImage(bag.image_url)} alt=""
+          style={{ maxWidth: "100%", maxHeight: "80px", objectFit: "contain" }} />
       </div>
+    )}
+    {accessories.map((acc, i) => (
+      <div key={i} style={{ width: "100%", height: "60px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img src={getImage(acc.image_url)} alt=""
+          style={{ maxWidth: "100%", maxHeight: "60px", objectFit: "contain" }} />
+      </div>
+    ))}
+  </div>
+
+</div>
 
       {/* SAVE BUTTON */}
       <div style={{ padding: "0 16px 16px" }}>
