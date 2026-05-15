@@ -529,12 +529,12 @@ showToast("Outfit saved ");
     gap: "10px",
     paddingTop: "4px",
   }}>
-    {bag && (
-      <div style={{ width: "100%", height: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <img src={getImage(bag.image_url)} alt=""
-          style={{ maxWidth: "100%", maxHeight: "80px", objectFit: "contain" }} />
-      </div>
-    )}
+   {bag && (
+  <div style={{ width: "100%", height: "70px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <img src={getImage(bag.image_url)} alt=""
+      style={{ maxWidth: "70%", maxHeight: "70px", objectFit: "contain" }} />
+  </div>
+)}
     {accessories.map((acc, i) => (
       <div key={i} style={{ width: "100%", height: "60px", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <img src={getImage(acc.image_url)} alt=""
