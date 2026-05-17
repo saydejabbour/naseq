@@ -12,16 +12,33 @@ const CATEGORIES = [
   { id: 2, name: "Bottoms" },
   { id: 3, name: "Shoes" },
   { id: 4, name: "Accessories" },
+  { id: 5, name: "Dresses & Jumpsuits" },
+  { id: 6, name: "Outerwear" },
+  { id: 7, name: "Bags" },
+  { id: 8, name: "Activewear" },
 ];
 
 const COLORS = [
-  "Black", "White", "Beige", "Brown", "Gray",
-  "Navy", "Blue", "Green", "Red", "Pink",
-  "Yellow", "Orange", "Purple", "Multicolor",
+  "Black", "White", "Ivory", "Beige", "Camel",
+  "Light Gray", "Charcoal", "Brown",
+  "Light Blue", "Navy", "Royal Blue",
+  "Olive", "Forest Green", "Sage",
+  "Red", "Burgundy", "Pink", "Blush",
+  "Orange", "Yellow", "Mustard",
+  "Purple", "Lavender",
+  "Multicolor", "Patterned",
 ];
 
-const STYLES = ["Casual", "Formal", "Sporty", "Elegant", "Streetwear", "Bohemian"];
-const SEASONS = ["Summer", "Winter", "Spring", "Fall", "All Season"];
+const STYLES = [
+  "Casual", "Smart Casual", "Business Casual", "Formal",
+  "Streetwear", "Sporty", "Elegant", "Chic",
+  "Bohemian", "Minimalist",
+];
+
+const SEASONS = [
+  "Spring", "Summer", "Autumn", "Winter",
+  "Spring / Autumn", "All Season",
+];
 
 export default function WardrobePage() {
   const { user } = useAuth();

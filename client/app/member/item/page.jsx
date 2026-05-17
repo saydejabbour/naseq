@@ -131,6 +131,7 @@ export default function AddItemPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const applyRules = (subcategory) => {
     if (!subcategory) return;
@@ -162,6 +163,7 @@ export default function AddItemPage() {
 
     setFile(f);
     setPreview(URL.createObjectURL(f));
+    setAiLoading(true);
 
     console.log("📤 Sending to AI...");
 
@@ -207,8 +209,10 @@ console.log("🎨 COLOR RESPONSE:", colorData);
 }
 
     } catch (err) {
-      console.error("AI ERROR:", err);
-    }
+  console.error("AI ERROR:", err);
+} finally {
+  setAiLoading(false);
+}
   };
 
   const onFileChange = (e) => handleFile(e.target.files[0]);
@@ -333,8 +337,33 @@ console.log("🎨 COLOR RESPONSE:", colorData);
           </button>
         )}
 
+        {/* ── AI LOADING ── */}
+{aiLoading && (
+  <div className="mt-6 mb-2">
+    <div className="bg-[#fff8f2] border border-[#f3dcc4] rounded-2xl px-5 py-4 flex items-center gap-4 shadow-sm">
+      
+      {/* Spinner */}
+      <div className="w-6 h-6 border-2 border-[#e8c9a8] border-t-[#e89a5c] rounded-full animate-spin" />
+
+      <div>
+        <p className="text-sm font-semibold text-[#7a4b25]">
+          Analyzing your clothing item...
+        </p>
+
+        <p className="text-xs text-[#9b7b63] mt-1">
+          Please wait while AI fills the form automatically.
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+
         {/* ── Fields Grid ── */}
-        <div className="grid grid-cols-2 gap-5 mt-7">
+        <div
+  className={`grid grid-cols-2 gap-5 mt-7 transition-opacity ${
+    aiLoading ? "opacity-50 pointer-events-none" : ""
+  }`}
+>
           <SelectField
             label="Category"
             value={form.category_id}

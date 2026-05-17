@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+
+const API = "http://127.0.0.1:5000";
 
 const CATEGORIES = [
   { id: 1, name: "Tops" },
@@ -15,11 +18,41 @@ const CATEGORIES = [
   { id: 8, name: "Activewear" },
 ];
 
+const COLORS = [
+  "Black", "White", "Ivory", "Beige", "Camel",
+  "Light Gray", "Charcoal", "Brown",
+  "Light Blue", "Navy", "Royal Blue",
+  "Olive", "Forest Green", "Sage",
+  "Red", "Burgundy", "Pink", "Blush",
+  "Orange", "Yellow", "Mustard",
+  "Purple", "Lavender",
+  "Multicolor", "Patterned",
+];
+
+const STYLES = [
+  "Casual", "Smart Casual", "Business Casual", "Formal",
+  "Streetwear", "Sporty", "Elegant", "Chic",
+  "Bohemian", "Minimalist",
+];
+
+const SEASONS = [
+  "Spring", "Summer", "Autumn", "Winter",
+  "Spring / Autumn", "All Season",
+];
+
 export default function WardrobePage() {
   const { user } = useAuth();
+  const router = useRouter();
 
   const [items, setItems] = useState([]);
-  const [filters, setFilters] = useState({ category: "" });
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
+  const [filters, setFilters] = useState({
+    category: "",
+    color: "",
+    style: "",
+    season: "",
+  });
 
   const [deleteModal, setDeleteModal] = useState({
     open: false,
@@ -29,14 +62,11 @@ export default function WardrobePage() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await fetch(
-          `http://127.0.0.1:5000/api/clothing/user/${user.user_id}`
-        );
-
+        const res = await fetch(`${API}/api/clothing/user/${user.user_id}`);
         const data = await res.json();
 
         if (data.success) {
-          setItems(data.data || []);
+          setItems(Array.isArray(data.data) ? data.data : []);
         }
       } catch (err) {
         console.error("FETCH ERROR:", err);
@@ -46,14 +76,33 @@ export default function WardrobePage() {
     if (user?.user_id) fetchItems();
   }, [user]);
 
+  const handleFilter = (key, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const filtered = items.filter((item) => {
+    return (
+      (!filters.category ||
+        item.category_name?.toLowerCase() === filters.category.toLowerCase()) &&
+      (!filters.color ||
+        item.color?.toLowerCase() === filters.color.toLowerCase()) &&
+      (!filters.style ||
+        item.style?.toLowerCase() === filters.style.toLowerCase()) &&
+      (!filters.season ||
+        item.season?.toLowerCase() === filters.season.toLowerCase())
+    );
+  });
+
   const handleDelete = async () => {
     if (!deleteModal.itemId) return;
 
     try {
-      const res = await fetch(
-        `http://127.0.0.1:5000/api/clothing/${deleteModal.itemId}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`${API}/api/clothing/${deleteModal.itemId}`, {
+        method: "DELETE",
+      });
 
       const data = await res.json();
 
@@ -61,7 +110,6 @@ export default function WardrobePage() {
         setItems((prev) =>
           prev.filter((item) => item.item_id !== deleteModal.itemId)
         );
-
         setDeleteModal({ open: false, itemId: null });
       } else {
         alert(data.message || "Delete failed");
@@ -72,13 +120,6 @@ export default function WardrobePage() {
     }
   };
 
-  const filtered = items.filter((item) => {
-    return (
-      !filters.category ||
-      item.category_name?.toLowerCase() === filters.category.toLowerCase()
-    );
-  });
-
   return (
     <div className="relative p-10 bg-[#FDF8F3] min-h-screen">
       <h1 className="text-4xl font-serif text-[#1a2e1a] mb-6">
@@ -87,14 +128,47 @@ export default function WardrobePage() {
 
       <div className="flex flex-wrap gap-5 mb-8">
         <SelectField
+          id="category"
           label="Category"
           value={filters.category}
-          onChange={(v) => setFilters({ category: v })}
-          options={CATEGORIES.map((c) => ({
-            label: c.name,
-            value: c.name,
-          }))}
+          onChange={(v) => handleFilter("category", v)}
+          options={CATEGORIES.map((c) => ({ label: c.name, value: c.name }))}
           placeholder="Select Category"
+          activeDropdown={activeDropdown}
+          setActiveDropdown={setActiveDropdown}
+        />
+
+        <SelectField
+          id="color"
+          label="Color"
+          value={filters.color}
+          onChange={(v) => handleFilter("color", v)}
+          options={COLORS.map((c) => ({ label: c, value: c }))}
+          placeholder="Select Color"
+          activeDropdown={activeDropdown}
+          setActiveDropdown={setActiveDropdown}
+        />
+
+        <SelectField
+          id="style"
+          label="Style"
+          value={filters.style}
+          onChange={(v) => handleFilter("style", v)}
+          options={STYLES.map((s) => ({ label: s, value: s }))}
+          placeholder="Select Style"
+          activeDropdown={activeDropdown}
+          setActiveDropdown={setActiveDropdown}
+        />
+
+        <SelectField
+          id="season"
+          label="Season"
+          value={filters.season}
+          onChange={(v) => handleFilter("season", v)}
+          options={SEASONS.map((s) => ({ label: s, value: s }))}
+          placeholder="Select Season"
+          activeDropdown={activeDropdown}
+          setActiveDropdown={setActiveDropdown}
         />
       </div>
 
@@ -104,7 +178,6 @@ export default function WardrobePage() {
             key={item.item_id}
             className="group relative bg-white rounded-2xl p-4 shadow-sm hover:shadow-lg transition"
           >
-            {/* DELETE BUTTON */}
             <button
               onClick={() =>
                 setDeleteModal({
@@ -112,119 +185,155 @@ export default function WardrobePage() {
                   itemId: item.item_id,
                 })
               }
-              className="
-                absolute top-3 right-3 z-50
-                opacity-0 group-hover:opacity-100
-                h-9 w-9 flex items-center justify-center
-                rounded-full bg-red-50 text-red-500
-                hover:bg-red-100 transition
-              "
+              className="absolute top-3 right-3 z-50 opacity-0 group-hover:opacity-100 h-9 w-9 flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition"
+              title="Delete item"
             >
               <Trash2 size={16} />
             </button>
 
             <div className="h-[260px] flex items-center justify-center">
               <img
-                src={`http://127.0.0.1:5000${item.image_url}`}
+                src={`${API}${item.image_url}`}
                 alt=""
                 className="h-full object-contain"
               />
             </div>
 
             <div className="flex flex-wrap gap-2 mt-3">
-              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
-                {item.category_name}
-              </span>
+              {item.style && (
+                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
+                  {item.style}
+                </span>
+              )}
+
+              {item.season && (
+                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
+                  {item.season}
+                </span>
+              )}
+
+              {item.category_name && (
+                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
+                  {item.category_name}
+                </span>
+              )}
             </div>
+
+            <button
+              onClick={() =>
+                router.push(`/member/generate?item_id=${item.item_id}`)
+              }
+              className="mt-4 w-full bg-[#F5E6D3] rounded-xl py-2 text-sm font-medium hover:bg-[#ead7bf] transition"
+            >
+              Generate Outfit
+            </button>
           </div>
         ))}
       </div>
 
       {filtered.length === 0 && (
-        <p className="text-center text-gray-400 mt-10">
-          No items found.
-        </p>
+        <p className="text-center text-gray-400 mt-10">No items found.</p>
       )}
 
       {deleteModal.open && (
-   <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
-    style={{ background: "rgba(20, 14, 10, 0.62)", backdropFilter: "blur(2px)" }}>
-    <div
-      className="w-full max-w-sm p-7"
-      style={{
-        background: "linear-gradient(160deg, #FFFDF9 0%, #FFF5E9 100%)",
-        borderRadius: "28px",
-        border: "1px solid rgba(245, 185, 120, 0.35)",
-        boxShadow: "0 2px 0 rgba(255,255,255,0.9) inset, 0 24px 60px rgba(47,62,52,0.18)",
-      }}
-    >
-      {/* Icon ring */}
-      <div className="mx-auto mb-4 flex items-center justify-center"
-        style={{
-          width: 56, height: 56, borderRadius: "50%",
-          background: "linear-gradient(145deg, #FFE8CE, #FFD4A8)",
-          border: "1.5px solid rgba(245, 160, 80, 0.3)",
-          boxShadow: "0 2px 8px rgba(245,160,80,0.18)",
-          color: "#D4782A",
-        }}>
-        <Trash2 size={22} strokeWidth={1.8} />
-      </div>
-
-      <h2 className="text-center mb-1.5"
-        style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 600, color: "#2A3328", letterSpacing: "-0.01em" }}>
-        Delete this item?
-      </h2>
-
-      <p className="text-center mb-6"
-        style={{ fontSize: 13.5, color: "#7C6E63", lineHeight: 1.6 }}>
-        This item will be removed<br />from your wardrobe.
-      </p>
-
-      {/* Divider */}
-      <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(210,170,120,0.35), transparent)", marginBottom: 20 }} />
-
-      <div className="flex gap-2.5">
-        <button
-          onClick={() => setDeleteModal({ open: false, itemId: null })}
-          className="flex-1 py-2.5 text-sm font-medium transition-all"
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
           style={{
-            borderRadius: 14,
-            background: "rgba(255,255,255,0.7)",
-            border: "1px solid rgba(210,175,130,0.4)",
-            color: "#6B5B4F",
-            backdropFilter: "blur(4px)",
+            background: "rgba(20, 14, 10, 0.62)",
+            backdropFilter: "blur(2px)",
           }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,245,232,0.95)"}
-          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.7)"}
         >
-          Cancel
-        </button>
+          <div
+            className="w-full max-w-sm p-7"
+            style={{
+              background:
+                "linear-gradient(160deg, #FFFDF9 0%, #FFF5E9 100%)",
+              borderRadius: "28px",
+              border: "1px solid rgba(245, 185, 120, 0.35)",
+              boxShadow:
+                "0 2px 0 rgba(255,255,255,0.9) inset, 0 24px 60px rgba(47,62,52,0.18)",
+            }}
+          >
+            <div
+              className="mx-auto mb-4 flex items-center justify-center"
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                background: "linear-gradient(145deg, #FFE8CE, #FFD4A8)",
+                border: "1.5px solid rgba(245, 160, 80, 0.3)",
+                color: "#D4782A",
+              }}
+            >
+              <Trash2 size={22} strokeWidth={1.8} />
+            </div>
 
-        <button
-          onClick={handleDelete}
-          className="flex-1 py-2.5 text-sm font-semibold transition-all"
-          style={{
-            borderRadius: 14,
-            background: "linear-gradient(160deg, #F5A040 0%, #E8843A 100%)",
-            border: "1px solid rgba(200,110,40,0.25)",
-            color: "#fff",
-            boxShadow: "0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 14px rgba(220,120,40,0.28)",
-          }}
-          onMouseEnter={e => e.currentTarget.style.filter = "brightness(1.07)"}
-          onMouseLeave={e => e.currentTarget.style.filter = "brightness(1)"}
-        >
-          Yes, Delete
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <h2
+              className="text-center mb-1.5"
+              style={{
+                fontFamily: "Georgia, serif",
+                fontSize: 20,
+                fontWeight: 600,
+                color: "#2A3328",
+              }}
+            >
+              Delete this item?
+            </h2>
+
+            <p
+              className="text-center mb-6"
+              style={{ fontSize: 13.5, color: "#7C6E63", lineHeight: 1.6 }}
+            >
+              This item will be removed
+              <br />
+              from your wardrobe.
+            </p>
+
+            <div className="flex gap-2.5">
+              <button
+                onClick={() => setDeleteModal({ open: false, itemId: null })}
+                className="flex-1 py-2.5 text-sm font-medium transition-all"
+                style={{
+                  borderRadius: 14,
+                  background: "rgba(255,255,255,0.7)",
+                  border: "1px solid rgba(210,175,130,0.4)",
+                  color: "#6B5B4F",
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="flex-1 py-2.5 text-sm font-semibold transition-all"
+                style={{
+                  borderRadius: 14,
+                  background:
+                    "linear-gradient(160deg, #F5A040 0%, #E8843A 100%)",
+                  color: "#fff",
+                }}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function SelectField({ label, value, onChange, options, placeholder }) {
-  const [open, setOpen] = useState(false);
+function SelectField({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+  activeDropdown,
+  setActiveDropdown,
+}) {
+  const open = activeDropdown === id;
 
   return (
     <div className="min-w-[180px] relative">
@@ -233,19 +342,14 @@ function SelectField({ label, value, onChange, options, placeholder }) {
       </label>
 
       <div
-        onClick={() => setOpen(!open)}
+        onClick={() => setActiveDropdown(open ? null : id)}
         className="w-full bg-[#f7efe6] border border-[#e3d6c7] rounded-2xl px-5 py-3 text-sm flex justify-between items-center cursor-pointer shadow-sm"
       >
         <span className={value ? "text-[#2d2d2d]" : "text-[#bfae9b]"}>
           {value || placeholder}
         </span>
 
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          className="text-[#bfae9b]"
-        >
+        <svg width="16" height="16" viewBox="0 0 24 24" className="text-[#bfae9b]">
           <path
             fill="none"
             stroke="currentColor"
@@ -260,7 +364,7 @@ function SelectField({ label, value, onChange, options, placeholder }) {
           <div
             onClick={() => {
               onChange("");
-              setOpen(false);
+              setActiveDropdown(null);
             }}
             className="px-4 py-2 text-[#bfae9b] hover:bg-[#efe4d6] cursor-pointer"
           >
@@ -272,7 +376,7 @@ function SelectField({ label, value, onChange, options, placeholder }) {
               key={o.value}
               onClick={() => {
                 onChange(o.value);
-                setOpen(false);
+                setActiveDropdown(null);
               }}
               className="px-4 py-2 hover:bg-[#efe4d6] cursor-pointer text-[#2d2d2d]"
             >

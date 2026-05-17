@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
-
-// ✅ LUCIDE ICONS
 import { Pencil, Trash2, Check } from "lucide-react";
 
 export default function MyTemplatesPage() {
@@ -17,7 +15,11 @@ export default function MyTemplatesPage() {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
 
-  /* ================= FETCH ================= */
+  const [deleteModal, setDeleteModal] = useState({
+    open: false,
+    templateId: null,
+  });
+
   useEffect(() => {
     if (!user?.user_id) return;
 
@@ -48,14 +50,12 @@ export default function MyTemplatesPage() {
     fetchTemplates();
   }, [user]);
 
-  /* ================= DELETE ================= */
-  const handleDelete = async (id) => {
-    try {
-      const confirmed = window.confirm("Delete this template?");
-      if (!confirmed) return;
+  const handleDelete = async () => {
+    if (!deleteModal.templateId) return;
 
+    try {
       const res = await fetch(
-        `http://localhost:5000/api/stylist/templates/${id}`,
+        `http://localhost:5000/api/stylist/templates/${deleteModal.templateId}`,
         { method: "DELETE" }
       );
 
@@ -67,9 +67,10 @@ export default function MyTemplatesPage() {
       }
 
       setTemplates((prev) =>
-        prev.filter((t) => t.template_id !== id)
+        prev.filter((t) => t.template_id !== deleteModal.templateId)
       );
 
+      setDeleteModal({ open: false, templateId: null });
       showToast("Template deleted successfully", "success");
     } catch (err) {
       console.error(err);
@@ -77,7 +78,6 @@ export default function MyTemplatesPage() {
     }
   };
 
-  /* ================= RENAME ================= */
   const handleRename = async (id) => {
     if (!editTitle.trim()) {
       showToast("Template name cannot be empty", "error");
@@ -85,14 +85,11 @@ export default function MyTemplatesPage() {
     }
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/stylist/templates/${id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: editTitle.trim() }),
-        }
-      );
+      const res = await fetch(`http://localhost:5000/api/stylist/templates/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: editTitle.trim() }),
+      });
 
       const data = await res.json();
 
@@ -103,15 +100,12 @@ export default function MyTemplatesPage() {
 
       setTemplates((prev) =>
         prev.map((t) =>
-          t.template_id === id
-            ? { ...t, title: editTitle.trim() }
-            : t
+          t.template_id === id ? { ...t, title: editTitle.trim() } : t
         )
       );
 
       setEditingId(null);
       setEditTitle("");
-
       showToast("Template renamed successfully", "success");
     } catch (err) {
       console.error(err);
@@ -125,22 +119,17 @@ export default function MyTemplatesPage() {
         My Templates
       </h1>
 
-      {/* LOADING */}
       {loading && (
         <p className="text-[#6b6b6b] text-sm">Loading templates...</p>
       )}
 
-      {/* EMPTY */}
       {!loading && templates.length === 0 && (
         <div className="bg-white border border-[#EADFD4] rounded-2xl p-8 text-center shadow-sm">
           <p className="text-[#2F3E34] font-medium">No templates yet.</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Publish a template first.
-          </p>
+          <p className="text-sm text-gray-500 mt-2">Publish a template first.</p>
         </div>
       )}
 
-      {/* GRID */}
       {!loading && templates.length > 0 && (
         <div className="grid grid-cols-3 gap-8">
           {templates.map((t) => {
@@ -156,7 +145,6 @@ export default function MyTemplatesPage() {
                 key={t.template_id}
                 className="bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition"
               >
-                {/* IMAGE */}
                 <div className="w-full h-[220px] flex items-center justify-center bg-[#f6f6f6] rounded-xl overflow-hidden">
                   <img
                     src={imageSrc}
@@ -165,7 +153,6 @@ export default function MyTemplatesPage() {
                   />
                 </div>
 
-                {/* TITLE / EDIT */}
                 {editingId === t.template_id ? (
                   <div className="mt-4 flex gap-2">
                     <input
@@ -187,29 +174,26 @@ export default function MyTemplatesPage() {
                   </h3>
                 )}
 
-                {/* DESCRIPTION */}
                 {t.description && (
                   <p className="mt-1 text-xs text-gray-500 line-clamp-2">
                     {t.description}
                   </p>
                 )}
 
-                
-                {/* STYLE + SEASON TAGS */}
- <div className="flex gap-2 flex-wrap mt-auto">
-            {t.style && (
-              <span className="text-xs bg-green-50 border px-2 py-1 rounded-full">
-                {t.style}
-              </span>
-            )}
-            {t.season && (
-              <span className="text-xs bg-green-50 border px-2 py-1 rounded-full">
-                {t.season}
-              </span>
-            )}
-          </div>
+                <div className="flex gap-2 flex-wrap mt-3">
+                  {t.style && (
+                    <span className="text-xs bg-green-50 border px-2 py-1 rounded-full">
+                      {t.style}
+                    </span>
+                  )}
 
-                {/* ACTIONS */}
+                  {t.season && (
+                    <span className="text-xs bg-green-50 border px-2 py-1 rounded-full">
+                      {t.season}
+                    </span>
+                  )}
+                </div>
+
                 <div className="flex gap-3 mt-3">
                   <button
                     onClick={() => {
@@ -223,7 +207,12 @@ export default function MyTemplatesPage() {
                   </button>
 
                   <button
-                    onClick={() => handleDelete(t.template_id)}
+                    onClick={() =>
+                      setDeleteModal({
+                        open: true,
+                        templateId: t.template_id,
+                      })
+                    }
                     className="flex-1 text-xs px-3 py-1 rounded-full bg-red-50 text-red-500 flex items-center justify-center gap-1"
                   >
                     <Trash2 size={12} />
@@ -233,6 +222,112 @@ export default function MyTemplatesPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {deleteModal.open && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+          style={{
+            background: "rgba(20, 14, 10, 0.62)",
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          <div
+            className="w-full max-w-sm p-7"
+            style={{
+              background:
+                "linear-gradient(160deg, #FFFDF9 0%, #FFF5E9 100%)",
+              borderRadius: "28px",
+              border: "1px solid rgba(245, 185, 120, 0.35)",
+              boxShadow:
+                "0 2px 0 rgba(255,255,255,0.9) inset, 0 24px 60px rgba(47,62,52,0.18)",
+            }}
+          >
+            <div
+              className="mx-auto mb-4 flex items-center justify-center"
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: "50%",
+                background: "linear-gradient(145deg, #FFE8CE, #FFD4A8)",
+                border: "1.5px solid rgba(245, 160, 80, 0.3)",
+                boxShadow: "0 2px 8px rgba(245,160,80,0.18)",
+                color: "#D4782A",
+              }}
+            >
+              <Trash2 size={22} strokeWidth={1.8} />
+            </div>
+
+            <h2
+              className="text-center mb-1.5"
+              style={{
+                fontFamily: "Georgia, serif",
+                fontSize: 20,
+                fontWeight: 600,
+                color: "#2A3328",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Delete this template?
+            </h2>
+
+            <p
+              className="text-center mb-6"
+              style={{
+                fontSize: 13.5,
+                color: "#7C6E63",
+                lineHeight: 1.6,
+              }}
+            >
+              This template will be removed
+              <br />
+              from your templates.
+            </p>
+
+            <div
+              style={{
+                height: "1px",
+                background:
+                  "linear-gradient(90deg, transparent, rgba(210,170,120,0.35), transparent)",
+                marginBottom: 20,
+              }}
+            />
+
+            <div className="flex gap-2.5">
+              <button
+                onClick={() =>
+                  setDeleteModal({ open: false, templateId: null })
+                }
+                className="flex-1 py-2.5 text-sm font-medium transition-all"
+                style={{
+                  borderRadius: 14,
+                  background: "rgba(255,255,255,0.7)",
+                  border: "1px solid rgba(210,175,130,0.4)",
+                  color: "#6B5B4F",
+                  backdropFilter: "blur(4px)",
+                }}
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleDelete}
+                className="flex-1 py-2.5 text-sm font-semibold transition-all"
+                style={{
+                  borderRadius: 14,
+                  background:
+                    "linear-gradient(160deg, #F5A040 0%, #E8843A 100%)",
+                  border: "1px solid rgba(200,110,40,0.25)",
+                  color: "#fff",
+                  boxShadow:
+                    "0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 14px rgba(220,120,40,0.28)",
+                }}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
